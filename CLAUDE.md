@@ -166,10 +166,10 @@ Additionally:
 ```
 swift-container/
 └── backups/
-    ├── db_schema_20251104_020000.sql.gz
-    ├── db_backup_20251104_020000.sql.gz
-    ├── db_schema_20251105_020000.sql.gz
-    ├── db_backup_20251105_020000.sql.gz
+    ├── 20251104_020000_db_schema.sql.gz
+    ├── 20251104_020000_db_backup.sql.gz
+    ├── 20251105_020000_db_schema.sql.gz
+    ├── 20251105_020000_db_backup.sql.gz
     └── ...
 ```
 

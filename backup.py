@@ -127,7 +127,7 @@ class PostgreSQLBackup:
         """Export database schema"""
         logger.info("Exporting database schema...")
 
-        schema_file = self.backup_dir / f"db_schema_{self.timestamp}.sql"
+        schema_file = self.backup_dir / f"{self.timestamp}_db_schema.sql"
 
         # Run pg_dump for schema
         cmd = [
@@ -163,7 +163,7 @@ class PostgreSQLBackup:
         """Export database data"""
         logger.info("Exporting database data...")
 
-        data_file = self.backup_dir / f"db_backup_{self.timestamp}.sql"
+        data_file = self.backup_dir / f"{self.timestamp}_db_backup.sql"
 
         # Run pg_dump for data
         cmd = [
@@ -285,8 +285,8 @@ class PostgreSQLBackup:
                 for item in result.get('listing', []):
                     object_name = item['name']
 
-                    # Extract date from filename (format: backups/db_schema_YYYYMMDD_HHMMSS.sql.gz)
-                    match = re.search(r'(\d{8})_\d{6}', object_name)
+                    # Extract date from filename (format: backups/YYYYMMDD_HHMMSS_db_schema.sql.gz)
+                    match = re.search(r'(\d{8})_\d{6}_db_', object_name)
                     if match:
                         file_date = match.group(1)
 

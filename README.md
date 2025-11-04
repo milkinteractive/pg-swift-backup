@@ -117,8 +117,8 @@ Backups are stored in the following format:
 
 ```
 backups/
-  db_schema_YYYYMMDD_HHMMSS.sql.gz  # Schema backup
-  db_backup_YYYYMMDD_HHMMSS.sql.gz  # Data backup
+  YYYYMMDD_HHMMSS_db_schema.sql.gz  # Schema backup
+  YYYYMMDD_HHMMSS_db_backup.sql.gz  # Data backup
 ```
 
 ## Logs and Monitoring
@@ -147,16 +147,16 @@ To restore a backup:
 
 ```bash
 # 1. Download backup from Swift
-swift download CONTAINER_NAME backups/db_schema_YYYYMMDD_HHMMSS.sql.gz
-swift download CONTAINER_NAME backups/db_backup_YYYYMMDD_HHMMSS.sql.gz
+swift download CONTAINER_NAME backups/YYYYMMDD_HHMMSS_db_schema.sql.gz
+swift download CONTAINER_NAME backups/YYYYMMDD_HHMMSS_db_backup.sql.gz
 
 # 2. Decompress
-gunzip db_schema_*.sql.gz
-gunzip db_backup_*.sql.gz
+gunzip *_db_schema.sql.gz
+gunzip *_db_backup.sql.gz
 
 # 3. Restore to database
-psql -h HOST -p PORT -U USER -d DATABASE < db_schema_*.sql
-psql -h HOST -p PORT -U USER -d DATABASE < db_backup_*.sql
+psql -h HOST -p PORT -U USER -d DATABASE < *_db_schema.sql
+psql -h HOST -p PORT -U USER -d DATABASE < *_db_backup.sql
 ```
 
 ## Troubleshooting

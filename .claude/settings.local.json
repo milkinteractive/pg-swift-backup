@@ -3,7 +3,9 @@
     "allow": [
       "Bash(docker compose build:*)",
       "Bash(timeout 45 docker compose:*)",
-      "Bash(docker compose run:*)"
+      "Bash(docker compose run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
