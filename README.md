@@ -68,9 +68,31 @@ SWIFT_REGION=RegionOne
 
 ## Usage
 
-### Automatic Backup with Built-in Cron (Recommended)
+### Using Pre-built Image from GitHub Container Registry (Recommended)
 
-The container includes a built-in cron daemon that automatically runs backups on schedule:
+The easiest way to use this backup system is with the pre-built Docker image:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/milkinteractive/backup-pg-to-swift:latest
+
+# Update docker-compose.yml to use the pre-built image
+# Replace 'build: .' with:
+# image: ghcr.io/milkinteractive/backup-pg-to-swift:latest
+
+# Start the container
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop the container
+docker compose down
+```
+
+### Building from Source
+
+Alternatively, build the image yourself:
 
 ```bash
 # Build and start the container
