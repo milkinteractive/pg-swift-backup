@@ -3,7 +3,10 @@ set -e
 
 # Create cron job from environment variable
 # Default: täglich um 2 Uhr nachts
+# Remove quotes from CRON_SCHEDULE and RUN_ON_STARTUP if present
 CRON_SCHEDULE="${CRON_SCHEDULE:-0 2 * * *}"
+CRON_SCHEDULE="${CRON_SCHEDULE//\"/}"  # Remove all quotes
+RUN_ON_STARTUP="${RUN_ON_STARTUP//\"/}"  # Remove all quotes
 
 echo "Setting up cron job with schedule: $CRON_SCHEDULE"
 

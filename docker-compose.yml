@@ -7,15 +7,17 @@ services:
     environment:
       # Cron schedule (default: daily at 2 AM)
       # Format: Minute Hour Day Month Weekday
+      # Note: Do NOT use quotes around the cron schedule
       # Examples:
-      #   "0 2 * * *"     - Daily at 2 AM
-      #   "0 */6 * * *"   - Every 6 hours
-      #   "0 0 * * 0"     - Every Sunday at midnight
-      #   "*/30 * * * *"  - Every 30 minutes
-      CRON_SCHEDULE: "0 2 * * *"
+      #   0 2 * * *     - Daily at 2 AM
+      #   0 */6 * * *   - Every 6 hours
+      #   0 0 * * 0     - Every Sunday at midnight
+      #   */30 * * * *  - Every 30 minutes
+      CRON_SCHEDULE: 0 2 * * *
 
       # Run backup on container startup (true/false)
-      RUN_ON_STARTUP: "false"
+      # Note: Do NOT use quotes
+      RUN_ON_STARTUP: false
     volumes:
       - ./backups:/backups
     restart: unless-stopped
