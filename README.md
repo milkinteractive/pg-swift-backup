@@ -61,6 +61,8 @@ SWIFT_REGION=RegionOne
 ### Backup Configuration
 
 - `INCLUDED_SCHEMAS`: Which schemas to backup (default: `public`)
+- `BACKUP_DIR`: Local directory for temporary backup files (default: `/backups`)
+- `SWIFT_PREFIX`: Path prefix in Swift container (default: `backups`)
 - `RETENTION_DAYS`: How long to keep backups (default: 30 days)
 - `TZ`: Timezone for timestamps (default: `Europe/Zurich`)
 - `CRON_SCHEDULE`: When to run backups (default: `"0 2 * * *"` - daily at 2 AM)
@@ -135,13 +137,15 @@ docker compose run --rm pg-backup python3 /usr/local/bin/backup.py
 
 ## Backup Structure
 
-Backups are stored in the following format:
+Backups are stored in Swift with the following format:
 
 ```
-backups/
+{SWIFT_PREFIX}/
   YYYYMMDD_HHMMSS_db_schema.sql.gz  # Schema backup
   YYYYMMDD_HHMMSS_db_backup.sql.gz  # Data backup
 ```
+
+By default, `SWIFT_PREFIX` is `backups`, so files are stored under `backups/` in your Swift container.
 
 ## Logs and Monitoring
 
@@ -247,6 +251,7 @@ psql -h HOST -p PORT -U USER -d DATABASE < *_db_backup.sql
 | `SWIFT_REGION` | Swift region | - | Yes |
 | `INCLUDED_SCHEMAS` | Schemas to backup | `public` | No |
 | `BACKUP_DIR` | Local backup directory | `/backups` | No |
+| `SWIFT_PREFIX` | Swift path prefix | `backups` | No |
 | `RETENTION_DAYS` | Days to keep backups | `30` | No |
 | `TZ` | Timezone | `Europe/Zurich` | No |
 | `CRON_SCHEDULE` | Cron schedule | `"0 2 * * *"` | No |

@@ -137,6 +137,7 @@ backup-pg-to-swift/
 |----------|-------------|---------|
 | `INCLUDED_SCHEMAS` | Schemas to backup | `public` |
 | `BACKUP_DIR` | Local backup directory | `/backups` |
+| `SWIFT_PREFIX` | Swift path prefix | `backups` |
 | `RETENTION_DAYS` | Days to keep backups | `30` |
 | `TZ` | Timezone | `Europe/Zurich` |
 | `CRON_SCHEDULE` | Cron expression | `0 2 * * *` |
@@ -165,13 +166,15 @@ Additionally:
 
 ```
 swift-container/
-└── backups/
+└── {SWIFT_PREFIX}/
     ├── 20251104_020000_db_schema.sql.gz
     ├── 20251104_020000_db_backup.sql.gz
     ├── 20251105_020000_db_schema.sql.gz
     ├── 20251105_020000_db_backup.sql.gz
     └── ...
 ```
+
+By default, `SWIFT_PREFIX` is `backups`, so files are stored under `backups/` in your Swift container. This prefix can be customized via the `SWIFT_PREFIX` environment variable.
 
 ## Log Management
 
