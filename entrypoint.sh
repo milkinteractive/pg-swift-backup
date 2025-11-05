@@ -46,18 +46,19 @@ RUN_ON_STARTUP="${RUN_ON_STARTUP//\"/}"  # Remove all quotes
 echo "Setting up cron job with schedule: $CRON_SCHEDULE"
 
 # Create cron job file with proper PATH
-cat > /etc/cron.d/pg-backup << EOF
+cat > /etc/cron.d/pg-backup << 'CRON_EOF'
 # PostgreSQL Backup Cron Job
 PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
-$CRON_SCHEDULE root /usr/local/bin/run-backup.sh >> /var/log/pg-backup.log 2>&1
+CRON_EOF
 
-EOF
+echo "$CRON_SCHEDULE root /usr/local/bin/run-backup.sh >> /var/log/pg-backup.log 2>&1" >> /etc/cron.d/pg-backup
+echo "" >> /etc/cron.d/pg-backup
 
 # Give execution rights on the cron job
 chmod 0644 /etc/cron.d/pg-backup
 
 # Create the wrapper script that sets up the environment
-cat > /usr/local/bin/run-backup.sh << 'EOF'
+cat > /usr/local/bin/run-backup.sh << EOF
 #!/bin/bash
 # Export all environment variables for cron
 export DB_HOST="${DB_HOST}"
@@ -77,9 +78,9 @@ export RETENTION_DAYS="${RETENTION_DAYS}"
 export TZ="${TZ}"
 
 # Run backup
-echo "=== Backup started at $(date) ==="
+echo "=== Backup started at \$(date) ==="
 /usr/local/bin/python3 /usr/local/bin/backup.py
-echo "=== Backup finished at $(date) ==="
+echo "=== Backup finished at \$(date) ==="
 echo ""
 EOF
 
