@@ -48,6 +48,7 @@ class PostgreSQLBackup:
 
         # Backup settings
         self.backup_dir = Path(os.getenv('BACKUP_DIR', '/backups'))
+        self.swift_prefix = os.getenv('SWIFT_PREFIX', 'backups')
         self.included_schemas = os.getenv('INCLUDED_SCHEMAS', 'public')
         self.extra_flags = os.getenv('EXTRA_FLAGS', '--column-inserts --rows-per-insert 8000')
         self.sed_remove_comments = os.getenv('SED_REMOVE_COMMENTS', r'/^--/d')
@@ -235,7 +236,7 @@ class PostgreSQLBackup:
         options = self.get_swift_options()
         swift_service = SwiftService(options=options)
 
-        object_name = f"backups/{file_path.name}"
+        object_name = f"{self.swift_prefix}/{file_path.name}"
 
         upload_object = SwiftUploadObject(
             source=str(file_path),
@@ -270,7 +271,7 @@ class PostgreSQLBackup:
 
         try:
             # List objects in container
-            list_options = {'prefix': 'backups/db_'}
+            list_options = {'prefix': f'{self.swift_prefix}/'}
             for result in swift_service.list(
                 container=self.swift_container,
                 options=list_options
@@ -282,7 +283,7 @@ class PostgreSQLBackup:
                 for item in result.get('listing', []):
                     object_name = item['name']
 
-                    # Extract date from filename (format: backups/YYYYMMDD_HHMMSS_db_schema.sql.gz)
+                    # Extract date from filename (format: {prefix}/YYYYMMDD_HHMMSS_db_schema.sql.gz)
                     match = re.search(r'(\d{8})_\d{6}_db_', object_name)
                     if match:
                         file_date = match.group(1)
