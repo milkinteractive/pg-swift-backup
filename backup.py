@@ -43,8 +43,8 @@ class PostgreSQLBackup:
         self.swift_username = self.get_env('SWIFT_USERNAME')
         self.swift_password = self.get_env('SWIFT_PASSWORD')
         self.swift_container = self.get_env('SWIFT_CONTAINER')
-        self.swift_region = os.getenv('SWIFT_REGION', '')
-        self.swift_tenant_name = os.getenv('SWIFT_TENANT_NAME', '')
+        self.swift_region = self.get_env('SWIFT_REGION')
+        self.swift_tenant_name = self.get_env('SWIFT_TENANT_NAME')
 
         # Backup settings
         self.backup_dir = Path(os.getenv('BACKUP_DIR', '/backups'))
