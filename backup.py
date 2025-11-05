@@ -91,10 +91,7 @@ class PostgreSQLBackup:
         for line in lines:
             # Skip comment lines if configured
             if line.startswith('--'):
-                # Apply various transformations
-                if 'ALTER DEFAULT PRIVILEGES FOR ROLE "supabase_admin"' in line:
-                    line = '-- ' + line
-                elif 'COMMENT ON EXTENSION' in line:
+                if 'COMMENT ON EXTENSION' in line:
                     line = '-- ' + line
                 elif 'CREATE POLICY "cron_job_' in line:
                     line = '-- ' + line

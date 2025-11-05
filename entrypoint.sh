@@ -1,8 +1,43 @@
 #!/bin/bash
 set -e
 
+# Validate required environment variables
+REQUIRED_VARS=(
+    "DB_HOST"
+    "DB_PORT"
+    "DB_NAME"
+    "DB_USER"
+    "DB_PASSWORD"
+    "SWIFT_AUTH_URL"
+    "SWIFT_USERNAME"
+    "SWIFT_PASSWORD"
+    "SWIFT_CONTAINER"
+    "SWIFT_TENANT_NAME"
+    "SWIFT_REGION"
+)
+
+echo "Validating required environment variables..."
+MISSING_VARS=()
+
+for var in "${REQUIRED_VARS[@]}"; do
+    if [ -z "${!var}" ]; then
+        MISSING_VARS+=("$var")
+    fi
+done
+
+if [ ${#MISSING_VARS[@]} -ne 0 ]; then
+    echo "ERROR: The following required environment variables are not set:"
+    printf '  - %s\n' "${MISSING_VARS[@]}"
+    echo ""
+    echo "Please set these variables in your .env file or docker-compose.yml"
+    exit 1
+fi
+
+echo "All required environment variables are set."
+echo ""
+
 # Create cron job from environment variable
-# Default: täglich um 2 Uhr nachts
+# Default: daily at 2 AM
 # Remove quotes from CRON_SCHEDULE and RUN_ON_STARTUP if present
 CRON_SCHEDULE="${CRON_SCHEDULE:-0 2 * * *}"
 CRON_SCHEDULE="${CRON_SCHEDULE//\"/}"  # Remove all quotes
@@ -10,9 +45,10 @@ RUN_ON_STARTUP="${RUN_ON_STARTUP//\"/}"  # Remove all quotes
 
 echo "Setting up cron job with schedule: $CRON_SCHEDULE"
 
-# Create cron job file
+# Create cron job file with proper PATH
 cat > /etc/cron.d/pg-backup << EOF
 # PostgreSQL Backup Cron Job
+PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
 $CRON_SCHEDULE root /usr/local/bin/run-backup.sh >> /var/log/pg-backup.log 2>&1
 
 EOF
@@ -42,7 +78,7 @@ export TZ="${TZ}"
 
 # Run backup
 echo "=== Backup started at $(date) ==="
-python3 /usr/local/bin/backup.py
+/usr/local/bin/python3 /usr/local/bin/backup.py
 echo "=== Backup finished at $(date) ==="
 echo ""
 EOF
