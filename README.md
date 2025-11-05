@@ -62,7 +62,9 @@ SWIFT_REGION=RegionOne
 
 - `INCLUDED_SCHEMAS`: Which schemas to backup (default: `public`)
 - `BACKUP_DIR`: Local directory for temporary backup files (default: `/backups`)
-- `SWIFT_PREFIX`: Path prefix in Swift container (default: `backups`)
+- `SWIFT_PREFIX`: Path prefix within Swift container (default: `backups`). Leave empty for root of container.
+  - Example: `SWIFT_PREFIX=backups` stores files at `container/backups/filename.sql.gz`
+  - Example: `SWIFT_PREFIX=` stores files at `container/filename.sql.gz`
 - `RETENTION_DAYS`: How long to keep backups (default: 30 days)
 - `TZ`: Timezone for timestamps (default: `Europe/Zurich`)
 - `CRON_SCHEDULE`: When to run backups (default: `"0 2 * * *"` - daily at 2 AM)
