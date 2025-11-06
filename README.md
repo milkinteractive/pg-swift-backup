@@ -4,14 +4,17 @@ Docker-based backup solution that automatically backs up PostgreSQL databases an
 
 ## Features
 
-- Automatic PostgreSQL schema and data backup
+- **Supabase-Optimized**: Uses official Supabase CLI dump scripts for production-ready backups
+- **Three-Part Backups**: Separate exports for roles, schema, and data
+- **Auto-Sync**: Dump scripts automatically synchronized with Supabase CLI during Docker build
+- Automatic PostgreSQL schema, data, and role backup
 - Backup file compression (gzip)
 - Upload to Infomaniak via OpenStack Swift
 - Automatic cleanup of old backups
-- Lightweight Alpine/Debian-based container
+- Lightweight Debian-based container
 - Built-in cron scheduler
 - Log rotation to prevent disk space issues
-- Configurable via environment variables
+- Fully configurable via environment variables
 
 ## Prerequisites
 
@@ -69,6 +72,22 @@ SWIFT_REGION=RegionOne
 - `TZ`: Timezone for timestamps (default: `Europe/Zurich`)
 - `CRON_SCHEDULE`: When to run backups (default: `"0 2 * * *"` - daily at 2 AM)
 - `RUN_ON_STARTUP`: Run backup on container start (default: `"false"`)
+
+### Backup Options
+
+- `DUMP_ROLES`: Export database roles (default: `true`)
+- `KEEP_COMMENTS`: Keep SQL comments in dumps (default: `false`)
+- `USE_COPY`: Use COPY instead of INSERT syntax for data (default: `false`)
+
+### Supabase Configuration (Advanced)
+
+These settings allow you to override the default Supabase schema/role patterns. If not set, the values are automatically extracted from the Supabase CLI at Docker build time.
+
+- `DB_DUMP_INTERNAL_SCHEMAS`: Pipe-separated list of schemas to exclude (e.g., `"auth|extensions|pgbouncer|..."`)
+- `DB_DUMP_RESERVED_ROLES`: Pipe-separated list of reserved roles (e.g., `"anon|authenticated|..."`)
+- `DB_DUMP_ALLOWED_CONFIGS`: Pipe-separated list of allowed role configurations (e.g., `"pgaudit.*|pgrst.*|..."`)
+
+**Note**: These are automatically set to match the Supabase CLI defaults. Only override if you have specific requirements.
 
 ## Usage
 
@@ -143,11 +162,23 @@ Backups are stored in Swift with the following format:
 
 ```
 {SWIFT_PREFIX}/
-  YYYYMMDD_HHMMSS_db_schema.sql.gz  # Schema backup
-  YYYYMMDD_HHMMSS_db_backup.sql.gz  # Data backup
+  YYYYMMDD_HHMMSS_db_roles.sql.gz   # Role definitions (if DUMP_ROLES=true)
+  YYYYMMDD_HHMMSS_db_schema.sql.gz  # Schema definitions
+  YYYYMMDD_HHMMSS_db_data.sql.gz    # Table data
 ```
 
 By default, `SWIFT_PREFIX` is `backups`, so files are stored under `backups/` in your Swift container.
+
+### Three-Part Backup System
+
+1. **Roles** (`*_db_roles.sql.gz`): Database roles, users, and permissions
+2. **Schema** (`*_db_schema.sql.gz`): Tables, sequences, views, functions, triggers
+3. **Data** (`*_db_data.sql.gz`): Actual table data
+
+This separation allows for flexible restore scenarios:
+- Restore only schema to create a new empty database
+- Restore roles separately to set up permissions
+- Restore data without recreating existing schema
 
 ## Logs and Monitoring
 
@@ -174,17 +205,35 @@ Log files are automatically rotated to prevent disk space issues:
 To restore a backup:
 
 ```bash
-# 1. Download backup from Swift
+# 1. Download backups from Swift
+swift download CONTAINER_NAME backups/YYYYMMDD_HHMMSS_db_roles.sql.gz
 swift download CONTAINER_NAME backups/YYYYMMDD_HHMMSS_db_schema.sql.gz
-swift download CONTAINER_NAME backups/YYYYMMDD_HHMMSS_db_backup.sql.gz
+swift download CONTAINER_NAME backups/YYYYMMDD_HHMMSS_db_data.sql.gz
 
 # 2. Decompress
+gunzip *_db_roles.sql.gz
 gunzip *_db_schema.sql.gz
-gunzip *_db_backup.sql.gz
+gunzip *_db_data.sql.gz
 
-# 3. Restore to database
+# 3. Restore to database (in order)
+psql -h HOST -p PORT -U USER -d postgres < *_db_roles.sql     # Restore roles (to postgres db)
+psql -h HOST -p PORT -U USER -d DATABASE < *_db_schema.sql    # Restore schema
+psql -h HOST -p PORT -U USER -d DATABASE < *_db_data.sql      # Restore data
+```
+
+### Partial Restore
+
+You can also restore only specific parts:
+
+```bash
+# Only restore schema (create empty database)
 psql -h HOST -p PORT -U USER -d DATABASE < *_db_schema.sql
-psql -h HOST -p PORT -U USER -d DATABASE < *_db_backup.sql
+
+# Only restore roles
+psql -h HOST -p PORT -U USER -d postgres < *_db_roles.sql
+
+# Only restore data (assumes schema already exists)
+psql -h HOST -p PORT -U USER -d DATABASE < *_db_data.sql
 ```
 
 ## Troubleshooting
@@ -238,26 +287,74 @@ psql -h HOST -p PORT -U USER -d DATABASE < *_db_backup.sql
 
 ## Environment Variables Reference
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `DB_HOST` | PostgreSQL host | - | Yes |
-| `DB_PORT` | PostgreSQL port | - | Yes |
-| `DB_NAME` | Database name | - | Yes |
-| `DB_USER` | Database user | - | Yes |
-| `DB_PASSWORD` | Database password | - | Yes |
-| `SWIFT_AUTH_URL` | Swift authentication URL | - | Yes |
-| `SWIFT_USERNAME` | Swift username | - | Yes |
-| `SWIFT_PASSWORD` | Swift password | - | Yes |
-| `SWIFT_CONTAINER` | Swift container name | - | Yes |
-| `SWIFT_TENANT_NAME` | Swift tenant/project name | - | Yes |
-| `SWIFT_REGION` | Swift region | - | Yes |
-| `INCLUDED_SCHEMAS` | Schemas to backup | `public` | No |
-| `BACKUP_DIR` | Local backup directory | `/backups` | No |
-| `SWIFT_PREFIX` | Swift path prefix | `backups` | No |
-| `RETENTION_DAYS` | Days to keep backups | `30` | No |
-| `TZ` | Timezone | `Europe/Zurich` | No |
-| `CRON_SCHEDULE` | Cron schedule | `"0 2 * * *"` | No |
-| `RUN_ON_STARTUP` | Run on container start | `"false"` | No |
+### Required Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DB_HOST` | PostgreSQL host | `db.example.com` |
+| `DB_PORT` | PostgreSQL port | `5432` |
+| `DB_NAME` | Database name | `postgres` |
+| `DB_USER` | Database user | `postgres` |
+| `DB_PASSWORD` | Database password | `secret` |
+| `SWIFT_AUTH_URL` | Swift authentication URL | `https://swiss-backup04.infomaniak.com/identity/v3` |
+| `SWIFT_USERNAME` | Swift username | `SBI-XXXXXXX` |
+| `SWIFT_PASSWORD` | Swift password | `your-password` |
+| `SWIFT_CONTAINER` | Swift container name | `my-backups` |
+| `SWIFT_TENANT_NAME` | Swift tenant/project name | `sb_project_SBI-XXXXXXX` |
+| `SWIFT_REGION` | Swift region | `RegionOne` |
+
+### Optional Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `INCLUDED_SCHEMAS` | Schemas to backup | `public` |
+| `BACKUP_DIR` | Local backup directory | `/backups` |
+| `SWIFT_PREFIX` | Swift path prefix | `backups` |
+| `RETENTION_DAYS` | Days to keep backups | `30` |
+| `TZ` | Timezone | `Europe/Zurich` |
+| `CRON_SCHEDULE` | Cron schedule | `"0 2 * * *"` |
+| `RUN_ON_STARTUP` | Run on container start | `"false"` |
+| `DUMP_ROLES` | Export database roles | `true` |
+| `KEEP_COMMENTS` | Keep SQL comments | `false` |
+| `USE_COPY` | Use COPY syntax | `false` |
+
+### Advanced Supabase Overrides
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_DUMP_INTERNAL_SCHEMAS` | Internal schemas to exclude | Auto-detected from Supabase CLI |
+| `DB_DUMP_RESERVED_ROLES` | Reserved roles | Auto-detected from Supabase CLI |
+| `DB_DUMP_ALLOWED_CONFIGS` | Allowed configurations | Auto-detected from Supabase CLI |
+
+## Supabase CLI Integration
+
+This backup solution uses the official dump scripts from the [Supabase CLI](https://github.com/supabase/cli) for production-grade database exports.
+
+### Automatic Synchronization
+
+During Docker build, the latest dump scripts are automatically downloaded from the Supabase CLI repository:
+
+- `dump_schema.sh` - Schema export with proper transformations
+- `dump_data.sh` - Data export excluding migration tables
+- `dump_role.sh` - Role export with reserved role handling
+
+Schema and role definitions are also extracted from `cli/internal/utils/misc.go` to ensure compatibility with Supabase's managed platform.
+
+### Fallback Templates
+
+Local template files are included as fallback if GitHub is unreachable during build. These are stored in the `templates/` directory and are kept in sync with the Supabase CLI.
+
+### Manual Synchronization
+
+To manually update the templates to the latest Supabase CLI version:
+
+```bash
+cd backup-pg-to-swift
+python3 scripts/extract_supabase_definitions.py --output supabase_defaults.py
+docker compose build --no-cache
+```
+
+This ensures your backup solution always uses the latest Supabase-compatible dump logic.
 
 ## License
 

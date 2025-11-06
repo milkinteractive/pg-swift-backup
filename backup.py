@@ -2,6 +2,7 @@
 """
 PostgreSQL Backup to OpenStack Swift
 Backs up PostgreSQL database and uploads to Infomaniak Swift storage
+Uses Supabase CLI dump scripts for production-ready database exports
 """
 
 import os
@@ -9,9 +10,9 @@ import sys
 import subprocess
 import gzip
 import shutil
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
-import re
 import logging
 
 from swiftclient.service import SwiftService, SwiftUploadObject
@@ -24,6 +25,21 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 logger = logging.getLogger(__name__)
+
+# Import Supabase defaults (can be overridden via environment variables)
+try:
+    sys.path.insert(0, '/usr/local/bin')
+    from supabase_defaults import (
+        DEFAULT_INTERNAL_SCHEMAS,
+        DEFAULT_RESERVED_ROLES,
+        DEFAULT_ALLOWED_CONFIGS
+    )
+except ImportError:
+    # Fallback if import fails
+    logger.warning("Could not import supabase_defaults, using hardcoded fallbacks")
+    DEFAULT_INTERNAL_SCHEMAS = "auth|extensions|pgbouncer|realtime|_realtime|storage|_analytics|supabase_functions|supabase_migrations|information_schema|pg_*|cron|graphql|graphql_public|net|pgsodium|pgsodium_masks|pgtle|repack|tiger|tiger_data|timescaledb_*|_timescaledb_*|topology|vault"
+    DEFAULT_RESERVED_ROLES = "anon|authenticated|authenticator|dashboard_user|pgbouncer|postgres|service_role|supabase_admin|supabase_auth_admin|supabase_functions_admin|supabase_read_only_user|supabase_replication_admin|supabase_storage_admin|pgsodium_keyholder|pgsodium_keyiduser|pgsodium_keymaker|pgtle_admin"
+    DEFAULT_ALLOWED_CONFIGS = "pgaudit.*|pgrst.*|session_replication_role|statement_timeout|track_io_timing"
 
 
 class PostgreSQLBackup:
@@ -50,9 +66,22 @@ class PostgreSQLBackup:
         self.backup_dir = Path(os.getenv('BACKUP_DIR', '/backups'))
         self.swift_prefix = os.getenv('SWIFT_PREFIX', 'backups')
         self.included_schemas = os.getenv('INCLUDED_SCHEMAS', 'public')
-        self.extra_flags = os.getenv('EXTRA_FLAGS', '--column-inserts --rows-per-insert 8000')
-        self.sed_remove_comments = os.getenv('SED_REMOVE_COMMENTS', r'/^--/d')
         self.retention_days = int(os.getenv('RETENTION_DAYS', '30'))
+
+        # Supabase dump configuration (override via environment or use defaults)
+        self.internal_schemas = os.getenv('DB_DUMP_INTERNAL_SCHEMAS', DEFAULT_INTERNAL_SCHEMAS)
+        self.reserved_roles = os.getenv('DB_DUMP_RESERVED_ROLES', DEFAULT_RESERVED_ROLES)
+        self.allowed_configs = os.getenv('DB_DUMP_ALLOWED_CONFIGS', DEFAULT_ALLOWED_CONFIGS)
+
+        # Dump options
+        self.dump_roles = os.getenv('DUMP_ROLES', 'true').lower() == 'true'
+        self.keep_comments = os.getenv('KEEP_COMMENTS', 'false').lower() == 'true'
+        self.use_copy = os.getenv('USE_COPY', 'false').lower() == 'true'
+
+        # Shell script paths
+        self.dump_schema_script = '/usr/local/bin/dump_schema.sh'
+        self.dump_data_script = '/usr/local/bin/dump_data.sh'
+        self.dump_role_script = '/usr/local/bin/dump_role.sh'
 
         # Create backup directory
         self.backup_dir.mkdir(parents=True, exist_ok=True)
@@ -68,89 +97,90 @@ class PostgreSQLBackup:
             raise ValueError(f"Required environment variable {key} is not set")
         return value
 
-    def run_command(self, cmd, env=None):
-        """Execute shell command and return output"""
+    def run_dump_script(self, script_path, additional_env=None):
+        """Execute dump shell script with proper environment"""
         try:
-            logger.debug(f"Running command: {' '.join(cmd)}")
+            # Base environment for PostgreSQL connection
+            env = {
+                **os.environ,
+                'PGHOST': self.db_host,
+                'PGPORT': self.db_port,
+                'PGUSER': self.db_user,
+                'PGPASSWORD': self.db_password,
+                'PGDATABASE': self.db_name,
+            }
+
+            # Add additional environment variables
+            if additional_env:
+                env.update(additional_env)
+
+            logger.debug(f"Running dump script: {script_path}")
             result = subprocess.run(
-                cmd,
+                ['bash', script_path],
                 check=True,
                 capture_output=True,
                 text=True,
-                env={**os.environ, **(env or {})}
+                env=env
             )
             return result.stdout
         except subprocess.CalledProcessError as e:
-            logger.error(f"Command failed: {e.stderr}")
+            logger.error(f"Dump script failed: {e.stderr}")
             raise
 
-    def process_sql_output(self, sql_content):
-        """Apply sed-like transformations to SQL output"""
-        lines = sql_content.split('\n')
-        processed_lines = []
+    def export_roles(self):
+        """Export database roles using dump_role.sh"""
+        logger.info("Exporting database roles...")
 
-        for line in lines:
-            # Skip comment lines if configured
-            if line.startswith('--'):
-                if 'COMMENT ON EXTENSION' in line:
-                    line = '-- ' + line
-                elif 'CREATE POLICY "cron_job_' in line:
-                    line = '-- ' + line
-                elif 'ALTER TABLE "cron"' in line:
-                    line = '-- ' + line
-                elif re.match(self.sed_remove_comments.strip('/d'), line):
-                    continue
-            else:
-                # Apply CREATE transformations
-                line = re.sub(r'^CREATE SCHEMA "', 'CREATE SCHEMA IF NOT EXISTS "', line)
-                line = re.sub(r'^CREATE TABLE "', 'CREATE TABLE IF NOT EXISTS "', line)
-                line = re.sub(r'^CREATE SEQUENCE "', 'CREATE SEQUENCE IF NOT EXISTS "', line)
-                line = re.sub(r'^CREATE VIEW "', 'CREATE OR REPLACE VIEW "', line)
-                line = re.sub(r'^CREATE FUNCTION "', 'CREATE OR REPLACE FUNCTION "', line)
-                line = re.sub(r'^CREATE TRIGGER "', 'CREATE OR REPLACE TRIGGER "', line)
+        role_file = self.backup_dir / f"{self.timestamp}_db_roles.sql"
 
-            processed_lines.append(line)
+        # Prepare environment for dump script
+        env = {
+            'RESERVED_ROLES': self.reserved_roles,
+            'ALLOWED_CONFIGS': self.allowed_configs,
+        }
 
-        # Remove consecutive duplicate lines
-        result = []
-        prev_line = None
-        for line in processed_lines:
-            if line != prev_line:
-                result.append(line)
-                prev_line = line
+        # Add comment removal if needed
+        if not self.keep_comments:
+            env['EXTRA_SED'] = '/^--/d'
 
-        return '\n'.join(result)
+        # Run dump script
+        output = self.run_dump_script(self.dump_role_script, env)
+
+        # Write to file
+        with open(role_file, 'w') as f:
+            f.write(output)
+
+        file_size = role_file.stat().st_size
+        logger.info(f"Role export completed: {file_size / 1024:.2f} KB")
+
+        return role_file
 
     def export_schema(self):
-        """Export database schema"""
+        """Export database schema using dump_schema.sh"""
         logger.info("Exporting database schema...")
 
         schema_file = self.backup_dir / f"{self.timestamp}_db_schema.sql"
 
-        # Run pg_dump for schema
-        cmd = [
-            'pg_dump',
-            '-h', self.db_host,
-            '-p', self.db_port,
-            '-U', self.db_user,
-            '--schema-only',
-            '--quote-all-identifiers',
-            '--extension', '*',
-            '--schema', self.included_schemas,
-            self.db_name
-        ]
+        # Prepare environment for dump script
+        env = {
+            'EXCLUDED_SCHEMAS': self.internal_schemas,
+            'INCLUDED_SCHEMAS': self.included_schemas,
+        }
 
-        env = {'PGPASSWORD': self.db_password}
-        output = self.run_command(cmd, env)
+        # Add extension flag if dumping all schemas
+        if self.included_schemas == '*':
+            env['EXTRA_FLAGS'] = '--extension=*'
 
-        # Process output
-        processed_output = self.process_sql_output(output)
+        # Add comment removal if needed
+        if not self.keep_comments:
+            env['EXTRA_SED'] = '/^--/d'
 
-        # Write to file with session role
+        # Run dump script
+        output = self.run_dump_script(self.dump_schema_script, env)
+
+        # Write to file
         with open(schema_file, 'w') as f:
-            f.write("SET session_replication_role = replica;\n")
-            f.write(processed_output)
-            f.write("\nRESET ALL;\n")
+            f.write(output)
 
         file_size = schema_file.stat().st_size
         logger.info(f"Schema export completed: {file_size / 1024 / 1024:.2f} MB")
@@ -158,36 +188,32 @@ class PostgreSQLBackup:
         return schema_file
 
     def export_data(self):
-        """Export database data"""
+        """Export database data using dump_data.sh"""
         logger.info("Exporting database data...")
 
-        data_file = self.backup_dir / f"{self.timestamp}_db_backup.sql"
+        data_file = self.backup_dir / f"{self.timestamp}_db_data.sql"
 
-        # Run pg_dump for data
-        cmd = [
-            'pg_dump',
-            '-h', self.db_host,
-            '-p', self.db_port,
-            '-U', self.db_user,
-            '--data-only',
-            '--quote-all-identifiers',
-            '--schema', self.included_schemas,
-            '--no-comments',
-            self.db_name
-        ]
+        # Prepare environment for dump script
+        env = {
+            'EXCLUDED_SCHEMAS': self.internal_schemas,
+            'INCLUDED_SCHEMAS': self.included_schemas,
+        }
 
-        # Add extra flags
-        if self.extra_flags:
-            cmd.extend(self.extra_flags.split())
+        # Configure data export format
+        extra_flags = []
+        if not self.use_copy:
+            # Use INSERT statements instead of COPY
+            extra_flags.extend(['--column-inserts', '--rows-per-insert 8000'])
 
-        env = {'PGPASSWORD': self.db_password}
-        output = self.run_command(cmd, env)
+        if extra_flags:
+            env['EXTRA_FLAGS'] = ' '.join(extra_flags)
 
-        # Write to file with session role
+        # Run dump script
+        output = self.run_dump_script(self.dump_data_script, env)
+
+        # Write to file
         with open(data_file, 'w') as f:
-            f.write("SET session_replication_role = replica;\n")
             f.write(output)
-            f.write("\nRESET ALL;\n")
 
         file_size = data_file.stat().st_size
         logger.info(f"Data export completed: {file_size / 1024 / 1024:.2f} MB")
@@ -317,6 +343,14 @@ class PostgreSQLBackup:
             logger.info("Starting PostgreSQL backup process")
             logger.info(f"Timestamp: {self.timestamp}")
 
+            files_to_upload = []
+
+            # Export roles (if enabled)
+            if self.dump_roles:
+                role_file = self.export_roles()
+                role_gz = self.compress_file(role_file)
+                files_to_upload.append(role_gz)
+
             # Export schema and data
             schema_file = self.export_schema()
             data_file = self.export_data()
@@ -324,16 +358,17 @@ class PostgreSQLBackup:
             # Compress files
             schema_gz = self.compress_file(schema_file)
             data_gz = self.compress_file(data_file)
+            files_to_upload.extend([schema_gz, data_gz])
 
             # Upload to Swift
-            self.upload_to_swift(schema_gz)
-            self.upload_to_swift(data_gz)
+            for file_path in files_to_upload:
+                self.upload_to_swift(file_path)
 
             # Cleanup old backups
             self.cleanup_old_backups()
 
             # Cleanup local files
-            self.cleanup_local_files(schema_gz, data_gz)
+            self.cleanup_local_files(*files_to_upload)
 
             logger.info("Backup process completed successfully")
             return 0

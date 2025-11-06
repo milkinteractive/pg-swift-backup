@@ -1,13 +1,23 @@
-# Environment files with secrets
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Environment
 .env
+.env.local
 
-# Backup files
+# Backups
 backups/
-*.sql
-*.sql.gz
 
-# Docker volumes
-volumes/
-
-# Logs
-*.log
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

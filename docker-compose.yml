@@ -17,7 +17,18 @@ services:
 
       # Run backup on container startup (true/false)
       # Note: Do NOT use quotes
-      RUN_ON_STARTUP: false
+      RUN_ON_STARTUP: true
+
+      # Backup options
+      DUMP_ROLES: true            # Export database roles (default: true)
+      KEEP_COMMENTS: false        # Keep SQL comments (default: false)
+      USE_COPY: false             # Use COPY instead of INSERT syntax (default: false)
+
+      # Supabase dump configuration (optional overrides)
+      # If not set, uses defaults extracted from Supabase CLI at build time
+      # DB_DUMP_INTERNAL_SCHEMAS: "custom|schemas|to|exclude"
+      # DB_DUMP_RESERVED_ROLES: "custom|reserved|roles"
+      # DB_DUMP_ALLOWED_CONFIGS: "custom|allowed|configs"
     volumes:
       - ./backups:/backups
     restart: unless-stopped
