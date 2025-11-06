@@ -4,43 +4,63 @@
 
 This project provides an automated PostgreSQL backup solution that uploads backups to Infomaniak's Swift object storage. The system runs in a Docker container with a built-in cron scheduler.
 
+## Development Notes
+
+**Git Commits**: This project does NOT use "Co-Authored-By: Claude" in commit messages. Keep commits clean and concise without AI attribution.
+
 ## Project Structure
 
 ```
 backup-pg-to-swift/
-├── backup.py           # Main Python backup script
-├── entrypoint.sh       # Container entrypoint with cron setup
-├── Dockerfile          # Docker image definition
-├── docker-compose.yml  # Docker Compose configuration
-├── requirements.txt    # Python dependencies
-├── .env                # Environment variables (not in git)
-├── .env.example        # Environment template
-├── .gitignore          # Git ignore rules
-├── README.md           # User documentation
-└── CLAUDE.md           # This file - technical documentation
+├── backup.py                        # Main Python backup script
+├── entrypoint.sh                    # Container entrypoint with cron setup
+├── Dockerfile                       # Multi-stage Docker build
+├── docker-compose.yml               # Docker Compose configuration (build)
+├── docker-compose.ghcr.yml          # Docker Compose configuration (pre-built)
+├── requirements.txt                 # Python dependencies
+├── supabase_defaults.py             # Auto-generated Supabase defaults
+├── scripts/
+│   └── extract_supabase_definitions.py  # Extracts schemas/roles from Supabase CLI
+├── templates/                       # Fallback dump scripts
+│   ├── dump_schema.sh
+│   ├── dump_data.sh
+│   └── dump_role.sh
+├── .env                             # Environment variables (not in git)
+├── .env.example                     # Environment template
+├── .gitignore                       # Git ignore rules
+├── README.md                        # User documentation
+└── CLAUDE.md                        # This file - technical documentation
 ```
 
 ## Components
 
 ### 1. backup.py
 
-**Purpose**: Main backup script that handles PostgreSQL dumps and Swift uploads
+**Purpose**: Main backup script that orchestrates PostgreSQL dumps and Swift uploads
 
 **Key Features**:
 - Object-oriented design with `PostgreSQLBackup` class
-- Connects to PostgreSQL and exports schema + data separately
-- Applies SQL transformations (CREATE IF NOT EXISTS, etc.)
+- Uses Supabase CLI dump scripts for production-ready exports
+- Three-part backup: roles, schema, and data exported separately
+- Environment variable overrides for Supabase configuration
 - Compresses backups with gzip
 - Uploads to Swift using python-swiftclient
 - Implements retention policy (deletes old backups)
 - Comprehensive logging
 
 **Key Methods**:
-- `export_schema()`: Exports database schema with transformations
-- `export_data()`: Exports database data
+- `run_dump_script()`: Executes shell dump scripts with proper environment
+- `export_roles()`: Exports database roles using dump_role.sh
+- `export_schema()`: Exports database schema using dump_schema.sh
+- `export_data()`: Exports database data using dump_data.sh
 - `compress_file()`: Compresses SQL files with gzip
 - `upload_to_swift()`: Uploads files to Swift storage
 - `cleanup_old_backups()`: Removes backups older than RETENTION_DAYS
+
+**Architecture Change (v4.0)**:
+- Replaced Python SQL transformations with official Supabase CLI shell scripts
+- Imports `supabase_defaults.py` with fallback to hardcoded values
+- Supports environment variable overrides: `DB_DUMP_INTERNAL_SCHEMAS`, `DB_DUMP_RESERVED_ROLES`, `DB_DUMP_ALLOWED_CONFIGS`
 
 ### 2. entrypoint.sh
 
@@ -57,29 +77,84 @@ backup-pg-to-swift/
 
 ### 3. Dockerfile
 
-**Base Image**: python:3.12-slim (Debian-based)
+**Architecture**: Multi-stage Docker build
 
-**Installed Packages**:
-- `postgresql-client`: For pg_dump command
-- `cron`: For scheduled backups
-- `logrotate`: For log file rotation
-- Python packages: python-swiftclient, python-keystoneclient
+**Stage 1 (builder)**:
+- Base: python:3.12-slim
+- Downloads latest dump scripts from Supabase CLI GitHub:
+  - `dump_schema.sh`
+  - `dump_data.sh`
+  - `dump_role.sh`
+- Runs `extract_supabase_definitions.py` to generate `supabase_defaults.py`
+- Falls back to local templates if GitHub is unreachable
 
-**Build Process**:
-1. Install system dependencies
-2. Install Python dependencies from requirements.txt
-3. Copy backup.py and entrypoint.sh
-4. Set default environment variables
+**Stage 2 (production)**:
+- Base: python:3.12-slim (Debian-based)
+- Installed Packages:
+  - `postgresql-client`: For pg_dump/pg_dumpall commands
+  - `cron`: For scheduled backups
+  - `logrotate`: For log file rotation
+  - Python packages: python-swiftclient, python-keystoneclient
+- Copies dump scripts and defaults from builder stage
+- Copies backup.py and entrypoint.sh
+- Sets default environment variables
 
-### 4. docker-compose.yml
+**Build Benefits**:
+- Always uses latest Supabase CLI dump logic
+- Offline build support with local fallbacks
+- Production image stays clean (no curl, no build tools)
 
-**Purpose**: Simplified deployment configuration
+### 4. scripts/extract_supabase_definitions.py
+
+**Purpose**: Extracts Supabase schema/role definitions from upstream CLI
+
+**Process**:
+1. Downloads `cli/internal/utils/misc.go` from Supabase CLI GitHub
+2. Parses Go source code with regex to extract:
+   - `InternalSchemas` (includes SystemSchemas)
+   - `ReservedRoles`
+   - `AllowedConfigs`
+3. Generates `supabase_defaults.py` with pipe-separated values
+4. Falls back to local file if GitHub unreachable
+
+**Usage**:
+```bash
+python3 scripts/extract_supabase_definitions.py --output supabase_defaults.py
+# Or with local file:
+python3 scripts/extract_supabase_definitions.py --local path/to/misc.go
+```
+
+### 5. templates/dump_*.sh
+
+**Purpose**: Fallback dump scripts if GitHub is unreachable during build
+
+**Files**:
+- `dump_schema.sh`: Schema export with SQL transformations
+- `dump_data.sh`: Data export with session replication role
+- `dump_role.sh`: Role export with pg_dumpall
+
+**Maintenance**: Keep in sync with Supabase CLI by periodically copying from upstream
+
+### 6. docker-compose.yml
+
+**Purpose**: Simplified deployment configuration for building from source
 
 **Key Features**:
+- Builds image locally
 - Loads environment from `.env` file
 - Mounts `./backups` for local backup storage (optional)
 - Sets `restart: unless-stopped` for automatic restart
-- Allows override of `CRON_SCHEDULE` and `RUN_ON_STARTUP`
+- Supports new backup options: `DUMP_ROLES`, `KEEP_COMMENTS`, `USE_COPY`
+- Allows Supabase configuration overrides
+
+### 7. docker-compose.ghcr.yml
+
+**Purpose**: Uses pre-built image from GitHub Container Registry
+
+**Key Features**:
+- Uses `ghcr.io/milkinteractive/backup-pg-to-swift:latest`
+- Identical configuration to docker-compose.yml
+- Faster deployment (no build required)
 
 ## Workflow
 
@@ -104,14 +179,29 @@ backup-pg-to-swift/
 3. run-backup.sh exports all environment variables
 4. run-backup.sh calls backup.py
 5. backup.py:
-   a. Exports schema → db_schema_YYYYMMDD_HHMMSS.sql
-   b. Exports data → db_backup_YYYYMMDD_HHMMSS.sql
-   c. Compresses both files with gzip
-   d. Uploads to Swift storage
-   e. Cleans up old backups (older than RETENTION_DAYS)
-   f. Removes local compressed files
+   a. Exports roles → YYYYMMDD_HHMMSS_db_roles.sql (if DUMP_ROLES=true)
+      - Executes /usr/local/bin/dump_role.sh
+      - Uses pg_dumpall --roles-only
+      - Comments out reserved roles
+   b. Exports schema → YYYYMMDD_HHMMSS_db_schema.sql
+      - Executes /usr/local/bin/dump_schema.sh
+      - Uses pg_dump --schema-only
+      - Applies CREATE IF NOT EXISTS transformations
+   c. Exports data → YYYYMMDD_HHMMSS_db_data.sql
+      - Executes /usr/local/bin/dump_data.sh
+      - Uses pg_dump --data-only
+      - Excludes migration tables
+   d. Compresses all files with gzip
+   e. Uploads to Swift storage
+   f. Cleans up old backups (older than RETENTION_DAYS)
+   g. Removes local compressed files
 6. Logs output to /var/log/pg-backup.log
 ```
+
+**Three-Part Backup Benefits**:
+- Flexible restore options (roles/schema/data independently)
+- Faster schema-only copies for testing
+- Separate role management across databases
 
 ## Environment Variables
 
@@ -142,7 +232,34 @@ backup-pg-to-swift/
 | `TZ` | Timezone | `Europe/Zurich` |
 | `CRON_SCHEDULE` | Cron expression | `0 2 * * *` |
 | `RUN_ON_STARTUP` | Run on start | `false` |
-| `EXTRA_FLAGS` | Extra pg_dump flags | `--column-inserts --rows-per-insert 8000` |
+| `DUMP_ROLES` | Export database roles | `true` |
+| `KEEP_COMMENTS` | Keep SQL comments | `false` |
+| `USE_COPY` | Use COPY syntax | `false` |
+
+### Advanced Supabase Overrides
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_DUMP_INTERNAL_SCHEMAS` | Internal schemas to exclude | Auto-detected from Supabase CLI |
+| `DB_DUMP_RESERVED_ROLES` | Reserved roles | Auto-detected from Supabase CLI |
+| `DB_DUMP_ALLOWED_CONFIGS` | Allowed role configs | Auto-detected from Supabase CLI |
+
+**Note**: These are automatically extracted during Docker build from Supabase CLI's `misc.go`. Only override if you have specific requirements or are using a non-Supabase PostgreSQL setup.
+
+## Supabase CLI Integration
+
+This project uses official dump scripts from the [Supabase CLI](https://github.com/supabase/cli) for production-ready database exports.
+
+**Automatic Synchronization**:
+- During Docker build, the latest dump scripts are downloaded from GitHub
+- Schema/role definitions are extracted from `cli/internal/utils/misc.go`
+- Local templates serve as fallback if GitHub is unreachable
+- Ensures compatibility with Supabase managed databases
+
+**Shell Scripts Used**:
+- `dump_schema.sh`: Schema export with SQL transformations
+- `dump_data.sh`: Data export excluding migration tables
+- `dump_role.sh`: Role export with reserved role handling
 
 ## pg_dump Transformations
 
@@ -167,14 +284,21 @@ Additionally:
 ```
 swift-container/
 └── {SWIFT_PREFIX}/
-    ├── 20251104_020000_db_schema.sql.gz
-    ├── 20251104_020000_db_backup.sql.gz
-    ├── 20251105_020000_db_schema.sql.gz
-    ├── 20251105_020000_db_backup.sql.gz
+    ├── 20251106_020000_db_roles.sql.gz   # Role definitions
+    ├── 20251106_020000_db_schema.sql.gz  # Schema definitions
+    ├── 20251106_020000_db_data.sql.gz    # Table data
+    ├── 20251107_020000_db_roles.sql.gz
+    ├── 20251107_020000_db_schema.sql.gz
+    ├── 20251107_020000_db_data.sql.gz
     └── ...
 ```
 
 By default, `SWIFT_PREFIX` is `backups`, so files are stored under `backups/` in your Swift container. This prefix can be customized via the `SWIFT_PREFIX` environment variable.
+
+**Three-Part Backup System**:
+- `*_db_roles.sql.gz`: Database roles, users, and permissions (optional via `DUMP_ROLES`)
+- `*_db_schema.sql.gz`: Tables, sequences, views, functions, triggers
+- `*_db_data.sql.gz`: Actual table data
 
 ## Log Management
 
@@ -332,10 +456,20 @@ Potential improvements:
 - **v3.0**: Added built-in cron scheduler
 - **v3.1**: Added log rotation
 - **v3.2**: Improved error handling and logging
+- **v4.0**: Supabase CLI integration
+  - Multi-stage Docker build
+  - Automatic sync with upstream Supabase CLI dump scripts
+  - Three-part backup system (roles/schema/data)
+  - Environment variable overrides for Supabase configuration
+  - Replaced Python transformations with official shell scripts
+  - Fixed missing `re` import bug
 
 ## References
 
 - [PostgreSQL pg_dump Documentation](https://www.postgresql.org/docs/current/app-pgdump.html)
+- [PostgreSQL pg_dumpall Documentation](https://www.postgresql.org/docs/current/app-pg-dumpall.html)
+- [Supabase CLI](https://github.com/supabase/cli) - Official Supabase command-line tool
+- [Supabase CLI Dump Scripts](https://github.com/supabase/cli/tree/main/internal/db/dump/templates)
 - [OpenStack Swift API](https://docs.openstack.org/swift/latest/api/object_api_v1_overview.html)
 - [Python swiftclient](https://docs.openstack.org/python-swiftclient/latest/)
 - [Infomaniak Public Cloud](https://www.infomaniak.com/en/hosting/public-cloud)
