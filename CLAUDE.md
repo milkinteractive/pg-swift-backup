@@ -14,6 +14,8 @@ This project provides an automated PostgreSQL backup solution that uploads backu
 - .env.example - Environment template
 - Any other files that reference the changed names
 
+**Testing**: When testing the backup system, ALWAYS set `RUN_ON_STARTUP=true` in your .env file to verify the backup process runs correctly on container startup. This ensures the backup script executes immediately, allowing you to validate the configuration and troubleshoot any issues.
+
 ## Project Structure
 
 ```
