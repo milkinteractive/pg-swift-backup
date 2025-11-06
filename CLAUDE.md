@@ -68,12 +68,14 @@ backup-pg-to-swift/
 
 **Responsibilities**:
 - Creates cron job from `CRON_SCHEDULE` environment variable
-- Generates `run-backup.sh` wrapper that exports all env vars for cron
+- Generates `run-backup.sh` wrapper that dynamically exports all DB_* and SWIFT_* env vars for cron
 - Sets up log rotation with logrotate
 - Optionally runs backup on startup if `RUN_ON_STARTUP=true`
 - Starts cron daemon and tails log file to keep container running
 
 **Why needed**: Cron doesn't inherit environment variables, so we need the wrapper script to export them.
+
+**Dynamic Export** (v1.1.0): The wrapper script uses `compgen -e | grep -E '^(DB_|SWIFT_)'` to automatically export all DB_* and SWIFT_* variables, eliminating the need to manually list each variable.
 
 ### 3. Dockerfile
 
@@ -144,7 +146,7 @@ python3 scripts/extract_supabase_definitions.py --local path/to/misc.go
 - Loads environment from `.env` file
 - Mounts `./backups` for local backup storage (optional)
 - Sets `restart: unless-stopped` for automatic restart
-- Supports new backup options: `DUMP_ROLES`, `KEEP_COMMENTS`, `USE_COPY`
+- Supports backup options: `DB_DUMP_ROLES`, `DB_DUMP_KEEP_COMMENTS`, `DB_DUMP_USE_COPY`
 - Allows Supabase configuration overrides
 
 ### 7. docker-compose.ghcr.yml
@@ -179,7 +181,7 @@ python3 scripts/extract_supabase_definitions.py --local path/to/misc.go
 3. run-backup.sh exports all environment variables
 4. run-backup.sh calls backup.py
 5. backup.py:
-   a. Exports roles → YYYYMMDD_HHMMSS_db_roles.sql (if DUMP_ROLES=true)
+   a. Exports roles → YYYYMMDD_HHMMSS_db_roles.sql (if DB_DUMP_ROLES=true)
       - Executes /usr/local/bin/dump_role.sh
       - Uses pg_dumpall --roles-only
       - Comments out reserved roles
@@ -193,7 +195,7 @@ python3 scripts/extract_supabase_definitions.py --local path/to/misc.go
       - Excludes migration tables
    d. Compresses all files with gzip
    e. Uploads to Swift storage
-   f. Cleans up old backups (older than RETENTION_DAYS)
+   f. Cleans up old backups (older than SWIFT_RETENTION_DAYS)
    g. Removes local compressed files
 6. Logs output to /var/log/pg-backup.log
 ```
@@ -225,16 +227,16 @@ python3 scripts/extract_supabase_definitions.py --local path/to/misc.go
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `INCLUDED_SCHEMAS` | Schemas to backup | `public` |
-| `BACKUP_DIR` | Local backup directory | `/backups` |
+| `DB_DUMP_INCLUDED_SCHEMAS` | Schemas to backup | `public` |
+| `DB_TMP_BACKUP_DIR` | Local backup directory | `/backups` |
 | `SWIFT_PREFIX` | Swift path prefix | `backups` |
-| `RETENTION_DAYS` | Days to keep backups | `30` |
-| `TZ` | Timezone | `Europe/Zurich` |
+| `SWIFT_RETENTION_DAYS` | Days to keep backups | `30` |
+| `TZ` | Timezone (for cron and timestamps) | `Europe/Zurich` |
 | `CRON_SCHEDULE` | Cron expression | `0 2 * * *` |
 | `RUN_ON_STARTUP` | Run on start | `false` |
-| `DUMP_ROLES` | Export database roles | `true` |
-| `KEEP_COMMENTS` | Keep SQL comments | `false` |
-| `USE_COPY` | Use COPY syntax | `false` |
+| `DB_DUMP_ROLES` | Export database roles | `true` |
+| `DB_DUMP_KEEP_COMMENTS` | Keep SQL comments | `false` |
+| `DB_DUMP_USE_COPY` | Use COPY syntax | `false` |
 
 ### Advanced Supabase Overrides
 
