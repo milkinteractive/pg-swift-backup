@@ -17,7 +17,7 @@ services:
 
       # Run backup on container startup (true/false)
       # Note: Do NOT use quotes
-      RUN_ON_STARTUP: true
+      RUN_ON_STARTUP: false
 
       # Backup options
       DUMP_ROLES: true            # Export database roles (default: true)

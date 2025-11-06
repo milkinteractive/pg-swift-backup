@@ -74,8 +74,19 @@ export SWIFT_TENANT_NAME="${SWIFT_TENANT_NAME}"
 export SWIFT_REGION="${SWIFT_REGION}"
 export INCLUDED_SCHEMAS="${INCLUDED_SCHEMAS}"
 export BACKUP_DIR="${BACKUP_DIR}"
+export SWIFT_PREFIX="${SWIFT_PREFIX}"
 export RETENTION_DAYS="${RETENTION_DAYS}"
 export TZ="${TZ}"
+
+# Backup options
+export DUMP_ROLES="${DUMP_ROLES}"
+export KEEP_COMMENTS="${KEEP_COMMENTS}"
+export USE_COPY="${USE_COPY}"
+
+# Supabase configuration overrides (optional)
+export DB_DUMP_INTERNAL_SCHEMAS="${DB_DUMP_INTERNAL_SCHEMAS}"
+export DB_DUMP_RESERVED_ROLES="${DB_DUMP_RESERVED_ROLES}"
+export DB_DUMP_ALLOWED_CONFIGS="${DB_DUMP_ALLOWED_CONFIGS}"
 
 # Run backup
 echo "=== Backup started at \$(date) ==="
