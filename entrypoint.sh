@@ -58,42 +58,23 @@ echo "" >> /etc/cron.d/pg-backup
 chmod 0644 /etc/cron.d/pg-backup
 
 # Create the wrapper script that sets up the environment
-cat > /usr/local/bin/run-backup.sh << EOF
+cat > /usr/local/bin/run-backup.sh << 'WRAPPER_EOF'
 #!/bin/bash
-# Export all environment variables for cron
-export DB_HOST="${DB_HOST}"
-export DB_PORT="${DB_PORT}"
-export DB_NAME="${DB_NAME}"
-export DB_USER="${DB_USER}"
-export DB_PASSWORD="${DB_PASSWORD}"
-export SWIFT_AUTH_URL="${SWIFT_AUTH_URL}"
-export SWIFT_USERNAME="${SWIFT_USERNAME}"
-export SWIFT_PASSWORD="${SWIFT_PASSWORD}"
-export SWIFT_CONTAINER="${SWIFT_CONTAINER}"
-export SWIFT_TENANT_NAME="${SWIFT_TENANT_NAME}"
-export SWIFT_REGION="${SWIFT_REGION}"
-export INCLUDED_SCHEMAS="${INCLUDED_SCHEMAS}"
-export BACKUP_DIR="${BACKUP_DIR}"
-export SWIFT_PREFIX="${SWIFT_PREFIX}"
-export RETENTION_DAYS="${RETENTION_DAYS}"
+
+# Export all DB_* and SWIFT_* environment variables for cron
+for var in $(compgen -e | grep -E '^(DB_|SWIFT_)'); do
+    eval "export $var=\"\${$var}\""
+done
+
+# Export TZ for timezone support
 export TZ="${TZ}"
 
-# Backup options
-export DUMP_ROLES="${DUMP_ROLES}"
-export KEEP_COMMENTS="${KEEP_COMMENTS}"
-export USE_COPY="${USE_COPY}"
-
-# Supabase configuration overrides (optional)
-export DB_DUMP_INTERNAL_SCHEMAS="${DB_DUMP_INTERNAL_SCHEMAS}"
-export DB_DUMP_RESERVED_ROLES="${DB_DUMP_RESERVED_ROLES}"
-export DB_DUMP_ALLOWED_CONFIGS="${DB_DUMP_ALLOWED_CONFIGS}"
-
 # Run backup
-echo "=== Backup started at \$(date) ==="
+echo "=== Backup started at $(date) ==="
 /usr/local/bin/python3 /usr/local/bin/backup.py
-echo "=== Backup finished at \$(date) ==="
+echo "=== Backup finished at $(date) ==="
 echo ""
-EOF
+WRAPPER_EOF
 
 chmod +x /usr/local/bin/run-backup.sh
 

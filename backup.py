@@ -63,10 +63,10 @@ class PostgreSQLBackup:
         self.swift_tenant_name = self.get_env('SWIFT_TENANT_NAME')
 
         # Backup settings
-        self.backup_dir = Path(os.getenv('BACKUP_DIR', '/backups'))
+        self.backup_dir = Path(os.getenv('DB_TMP_BACKUP_DIR', '/backups'))
         self.swift_prefix = os.getenv('SWIFT_PREFIX', 'backups')
-        self.included_schemas = os.getenv('INCLUDED_SCHEMAS', 'public')
-        self.retention_days = int(os.getenv('RETENTION_DAYS', '30'))
+        self.included_schemas = os.getenv('DB_DUMP_INCLUDED_SCHEMAS', 'public')
+        self.retention_days = int(os.getenv('SWIFT_RETENTION_DAYS', '30'))
 
         # Supabase dump configuration (override via environment or use defaults)
         self.internal_schemas = os.getenv('DB_DUMP_INTERNAL_SCHEMAS', DEFAULT_INTERNAL_SCHEMAS)
@@ -74,9 +74,9 @@ class PostgreSQLBackup:
         self.allowed_configs = os.getenv('DB_DUMP_ALLOWED_CONFIGS', DEFAULT_ALLOWED_CONFIGS)
 
         # Dump options
-        self.dump_roles = os.getenv('DUMP_ROLES', 'true').lower() == 'true'
-        self.keep_comments = os.getenv('KEEP_COMMENTS', 'false').lower() == 'true'
-        self.use_copy = os.getenv('USE_COPY', 'false').lower() == 'true'
+        self.dump_roles = os.getenv('DB_DUMP_ROLES', 'true').lower() == 'true'
+        self.keep_comments = os.getenv('DB_DUMP_KEEP_COMMENTS', 'false').lower() == 'true'
+        self.use_copy = os.getenv('DB_DUMP_USE_COPY', 'false').lower() == 'true'
 
         # Shell script paths
         self.dump_schema_script = '/usr/local/bin/dump_schema.sh'

@@ -63,21 +63,21 @@ SWIFT_REGION=RegionOne
 
 ### Backup Configuration
 
-- `INCLUDED_SCHEMAS`: Which schemas to backup (default: `public`)
-- `BACKUP_DIR`: Local directory for temporary backup files (default: `/backups`)
+- `DB_DUMP_INCLUDED_SCHEMAS`: Which schemas to backup (default: `public`)
+- `DB_TMP_BACKUP_DIR`: Local directory for temporary backup files (default: `/backups`)
 - `SWIFT_PREFIX`: Path prefix within Swift container (default: `backups`). Leave empty for root of container.
   - Example: `SWIFT_PREFIX=backups` stores files at `container/backups/filename.sql.gz`
   - Example: `SWIFT_PREFIX=` stores files at `container/filename.sql.gz`
-- `RETENTION_DAYS`: How long to keep backups (default: 30 days)
+- `SWIFT_RETENTION_DAYS`: How long to keep backups (default: 30 days)
 - `TZ`: Timezone for timestamps (default: `Europe/Zurich`)
 - `CRON_SCHEDULE`: When to run backups (default: `"0 2 * * *"` - daily at 2 AM)
 - `RUN_ON_STARTUP`: Run backup on container start (default: `"false"`)
 
 ### Backup Options
 
-- `DUMP_ROLES`: Export database roles (default: `true`)
-- `KEEP_COMMENTS`: Keep SQL comments in dumps (default: `false`)
-- `USE_COPY`: Use COPY instead of INSERT syntax for data (default: `false`)
+- `DB_DUMP_ROLES`: Export database roles (default: `true`)
+- `DB_DUMP_KEEP_COMMENTS`: Keep SQL comments in dumps (default: `false`)
+- `DB_DUMP_USE_COPY`: Use COPY instead of INSERT syntax for data (default: `false`)
 
 ### Supabase Configuration (Advanced)
 
@@ -307,16 +307,16 @@ psql -h HOST -p PORT -U USER -d DATABASE < *_db_data.sql
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `INCLUDED_SCHEMAS` | Schemas to backup | `public` |
-| `BACKUP_DIR` | Local backup directory | `/backups` |
+| `DB_DUMP_INCLUDED_SCHEMAS` | Schemas to backup | `public` |
+| `DB_TMP_BACKUP_DIR` | Local backup directory | `/backups` |
 | `SWIFT_PREFIX` | Swift path prefix | `backups` |
-| `RETENTION_DAYS` | Days to keep backups | `30` |
+| `SWIFT_RETENTION_DAYS` | Days to keep backups | `30` |
 | `TZ` | Timezone | `Europe/Zurich` |
 | `CRON_SCHEDULE` | Cron schedule | `"0 2 * * *"` |
 | `RUN_ON_STARTUP` | Run on container start | `"false"` |
-| `DUMP_ROLES` | Export database roles | `true` |
-| `KEEP_COMMENTS` | Keep SQL comments | `false` |
-| `USE_COPY` | Use COPY syntax | `false` |
+| `DB_DUMP_ROLES` | Export database roles | `true` |
+| `DB_DUMP_KEEP_COMMENTS` | Keep SQL comments | `false` |
+| `DB_DUMP_USE_COPY` | Use COPY syntax | `false` |
 
 ### Advanced Supabase Overrides
 
