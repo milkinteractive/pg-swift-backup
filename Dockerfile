@@ -59,15 +59,6 @@ RUN chmod +x /usr/local/bin/backup.py
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Set timezone (can be overridden)
-ENV TZ=Europe/Zurich
-
-# Cron schedule (can be overridden)
-ENV CRON_SCHEDULE="0 2 * * *"
-
-# Run backup on container startup (can be overridden)
-ENV RUN_ON_STARTUP="false"
-
 WORKDIR /backups
 
 # Run entrypoint script

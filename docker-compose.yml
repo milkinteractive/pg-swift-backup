@@ -4,31 +4,6 @@ services:
     container_name: pg-backup-to-swift
     env_file:
       - .env
-    environment:
-      # Cron schedule (default: daily at 2 AM)
-      # Format: Minute Hour Day Month Weekday
-      # Note: Do NOT use quotes around the cron schedule
-      # Examples:
-      #   0 2 * * *     - Daily at 2 AM
-      #   0 */6 * * *   - Every 6 hours
-      #   0 0 * * 0     - Every Sunday at midnight
-      #   */30 * * * *  - Every 30 minutes
-      CRON_SCHEDULE: 0 2 * * *
-
-      # Run backup on container startup (true/false)
-      # Note: Do NOT use quotes
-      RUN_ON_STARTUP: false
-
-      # Backup options
-      DUMP_ROLES: true            # Export database roles (default: true)
-      KEEP_COMMENTS: false        # Keep SQL comments (default: false)
-      USE_COPY: false             # Use COPY instead of INSERT syntax (default: false)
-
-      # Supabase dump configuration (optional overrides)
-      # If not set, uses defaults extracted from Supabase CLI at build time
-      # DB_DUMP_INTERNAL_SCHEMAS: "custom|schemas|to|exclude"
-      # DB_DUMP_RESERVED_ROLES: "custom|reserved|roles"
-      # DB_DUMP_ALLOWED_CONFIGS: "custom|allowed|configs"
     volumes:
       - ./backups:/backups
     restart: unless-stopped
