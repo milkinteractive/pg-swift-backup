@@ -8,7 +8,7 @@ This project provides an automated PostgreSQL backup solution that uploads backu
 
 **Git Commits**: This project does NOT use "Co-Authored-By: Claude" in commit messages. Keep commits clean and concise without AI attribution.
 
-**Git Tags**: When creating a new git tag, ALWAYS check the remote tags first with `git ls-remote --tags origin` and ensure the new version is higher than the latest remote tag. Use semantic versioning (MAJOR.MINOR.PATCH).
+**Git Tags**: When creating a new git tag, ALWAYS check the remote tags first with `git ls-remote --tags origin` and ensure the new version is higher than the latest remote tag. Use semantic versioning (MAJOR.MINOR.PATCH). After pushing tags to remote, monitor the GitHub workflow with `gh run list --workflow docker-publish.yml --limit 1` and `gh run watch` to ensure the Docker build succeeds.
 
 **Documentation Updates**: When renaming environment variables, functions, classes, or any documented identifiers, ALWAYS update ALL documentation files:
 - CLAUDE.md (this file) - Technical documentation
