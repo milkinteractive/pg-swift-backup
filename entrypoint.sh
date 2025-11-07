@@ -57,17 +57,23 @@ echo "" >> /etc/cron.d/pg-backup
 # Give execution rights on the cron job
 chmod 0644 /etc/cron.d/pg-backup
 
-# Create the wrapper script that sets up the environment
+# Create the wrapper script with shebang
 cat > /usr/local/bin/run-backup.sh << 'WRAPPER_EOF'
 #!/bin/bash
 
-# Export all DB_* and SWIFT_* environment variables for cron
+WRAPPER_EOF
+
+# Write all DB_* and SWIFT_* environment variables with their current values into the script
+# This ensures cron has access to these variables since cron doesn't inherit the environment
 for var in $(compgen -e | grep -E '^(DB_|SWIFT_)'); do
-    eval "export $var=\"\${$var}\""
+    echo "export $var=\"${!var}\"" >> /usr/local/bin/run-backup.sh
 done
 
-# Export TZ for timezone support
-export TZ="${TZ}"
+# Write TZ environment variable for timezone support
+echo "export TZ=\"${TZ}\"" >> /usr/local/bin/run-backup.sh
+
+# Append the backup execution commands to the script
+cat >> /usr/local/bin/run-backup.sh << 'WRAPPER_EOF'
 
 # Run backup
 echo "=== Backup started at $(date) ==="
