@@ -8,6 +8,8 @@ This project provides an automated PostgreSQL backup solution that uploads backu
 
 **Git Commits**: This project does NOT use "Co-Authored-By: Claude" in commit messages. Keep commits clean and concise without AI attribution.
 
+**Git Tags**: When creating a new git tag, ALWAYS check the remote tags first with `git ls-remote --tags origin` and ensure the new version is higher than the latest remote tag. Use semantic versioning (MAJOR.MINOR.PATCH).
+
 **Documentation Updates**: When renaming environment variables, functions, classes, or any documented identifiers, ALWAYS update ALL documentation files:
 - CLAUDE.md (this file) - Technical documentation
 - README.md - User documentation
