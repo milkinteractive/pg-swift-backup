@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2024-12-16
+
 ### Added
 - `_FILE` suffix support for all environment variables (Docker secrets pattern)
 - Documentation for Docker Secrets and Kubernetes Secrets integration
@@ -58,7 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable validation on startup
 - `RUN_ON_STARTUP` option for immediate backup on container start
 
-[Unreleased]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.0.0...v1.0.1
