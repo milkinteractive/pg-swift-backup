@@ -1,7 +1,53 @@
 #!/bin/bash
 set -e
 
-# Validate required environment variables
+# Function to resolve _FILE environment variables (Docker secrets pattern)
+# If VAR_FILE is set, reads the value from the file and exports it as VAR
+resolve_file_env() {
+    local var="$1"
+    local file_var="${var}_FILE"
+    local file_path="${!file_var}"
+
+    if [ -n "$file_path" ]; then
+        if [ -f "$file_path" ]; then
+            # Read value from file (strip trailing newlines)
+            local value
+            value=$(cat "$file_path" | tr -d '\n')
+            export "$var"="$value"
+            echo "  Loaded $var from $file_path"
+        else
+            echo "ERROR: File specified in ${file_var} not found: $file_path"
+            exit 1
+        fi
+    fi
+}
+
+# List of all supported environment variables for _FILE resolution
+ALL_VARS=(
+    "DB_HOST"
+    "DB_PORT"
+    "DB_NAME"
+    "DB_USER"
+    "DB_PASSWORD"
+    "SWIFT_AUTH_URL"
+    "SWIFT_USERNAME"
+    "SWIFT_PASSWORD"
+    "SWIFT_CONTAINER"
+    "SWIFT_TENANT_NAME"
+    "SWIFT_REGION"
+    "DB_TMP_BACKUP_DIR"
+    "SWIFT_PREFIX"
+    "DB_DUMP_INCLUDED_SCHEMAS"
+    "SWIFT_RETENTION_DAYS"
+    "DB_DUMP_INTERNAL_SCHEMAS"
+    "DB_DUMP_RESERVED_ROLES"
+    "DB_DUMP_ALLOWED_CONFIGS"
+    "DB_DUMP_ROLES"
+    "DB_DUMP_KEEP_COMMENTS"
+    "DB_DUMP_USE_COPY"
+)
+
+# Required variables (must be set either directly or via _FILE)
 REQUIRED_VARS=(
     "DB_HOST"
     "DB_PORT"
@@ -16,12 +62,18 @@ REQUIRED_VARS=(
     "SWIFT_REGION"
 )
 
+echo "Resolving _FILE environment variables..."
+for var in "${ALL_VARS[@]}"; do
+    resolve_file_env "$var"
+done
+echo ""
+
 echo "Validating required environment variables..."
 MISSING_VARS=()
 
 for var in "${REQUIRED_VARS[@]}"; do
     if [ -z "${!var}" ]; then
-        MISSING_VARS+=("$var")
+        MISSING_VARS+=("${var} (or ${var}_FILE)")
     fi
 done
 
@@ -30,6 +82,7 @@ if [ ${#MISSING_VARS[@]} -ne 0 ]; then
     printf '  - %s\n' "${MISSING_VARS[@]}"
     echo ""
     echo "Please set these variables in your .env file or docker-compose.yml"
+    echo "You can also use _FILE suffix (e.g., DB_PASSWORD_FILE) for Docker secrets"
     exit 1
 fi
 

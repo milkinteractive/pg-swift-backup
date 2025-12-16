@@ -262,6 +262,36 @@ psql -h HOST -p PORT -U USER -d DATABASE < *_db_data.sql
 - Ensure only authorized persons have access to backup files
 - Use strong passwords for PostgreSQL and Swift
 
+### Docker Secrets Support
+
+All environment variables support the `_FILE` suffix pattern for Docker Secrets and Kubernetes Secrets:
+
+```yaml
+# docker-compose.yml with Docker Secrets
+services:
+  pg-backup:
+    image: ghcr.io/milkinteractive/backup-pg-to-swift:latest
+    environment:
+      DB_HOST: db.example.com
+      DB_PORT: 5432
+      DB_NAME: postgres
+      DB_USER: postgres
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      SWIFT_PASSWORD_FILE: /run/secrets/swift_password
+      # ... other variables
+    secrets:
+      - db_password
+      - swift_password
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  swift_password:
+    file: ./secrets/swift_password.txt
+```
+
+When a `_FILE` variant is set, the value is read from the specified file path. This is more secure than passing secrets directly as environment variables.
+
 ## Architecture
 
 ```

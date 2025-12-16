@@ -175,12 +175,14 @@ python3 scripts/extract_supabase_definitions.py --local path/to/misc.go
 ```
 1. Docker starts container
 2. entrypoint.sh executes
-3. Creates cron job with CRON_SCHEDULE
-4. Creates run-backup.sh wrapper
-5. Sets up logrotate configuration
-6. Starts cron daemon
-7. (Optional) Runs backup if RUN_ON_STARTUP=true
-8. Tails /var/log/pg-backup.log (keeps container running)
+3. Resolves _FILE environment variables (Docker secrets)
+4. Validates required environment variables
+5. Creates cron job with CRON_SCHEDULE
+6. Creates run-backup.sh wrapper
+7. Sets up logrotate configuration
+8. Starts cron daemon
+9. (Optional) Runs backup if RUN_ON_STARTUP=true
+10. Tails /var/log/pg-backup.log (keeps container running)
 ```
 
 ### Backup Execution
@@ -216,6 +218,10 @@ python3 scripts/extract_supabase_definitions.py --local path/to/misc.go
 - Separate role management across databases
 
 ## Environment Variables
+
+All environment variables support the `_FILE` suffix pattern for Docker Secrets and Kubernetes Secrets. When a `VAR_FILE` is set, the value is read from the specified file path instead of from the environment variable directly.
+
+Example: Instead of `DB_PASSWORD=secret`, use `DB_PASSWORD_FILE=/run/secrets/db_password`
 
 ### Required
 

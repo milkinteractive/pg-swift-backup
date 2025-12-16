@@ -42,41 +42,82 @@ except ImportError:
     DEFAULT_ALLOWED_CONFIGS = "pgaudit.*|pgrst.*|session_replication_role|statement_timeout|track_io_timing"
 
 
+def get_env_value(key, default=None, required=False):
+    """Get environment variable with _FILE suffix support.
+
+    Supports Docker secrets pattern: if VAR_FILE is set,
+    reads the value from the file path specified in VAR_FILE.
+
+    Args:
+        key: Environment variable name
+        default: Default value if not set (ignored if required=True)
+        required: If True, raises ValueError when not set
+
+    Returns:
+        The environment variable value or default
+    """
+    # Check for _FILE variant first (Docker secrets pattern)
+    file_key = f"{key}_FILE"
+    file_path = os.getenv(file_key)
+
+    if file_path:
+        try:
+            with open(file_path, 'r') as f:
+                value = f.read().strip()
+            if value:
+                logger.debug(f"Loaded {key} from file {file_path}")
+                return value
+        except FileNotFoundError:
+            raise ValueError(f"File specified in {file_key} not found: {file_path}")
+        except PermissionError:
+            raise ValueError(f"Permission denied reading file specified in {file_key}: {file_path}")
+
+    # Fall back to direct environment variable
+    value = os.getenv(key)
+    if value:
+        return value
+
+    if required:
+        raise ValueError(f"Required environment variable {key} (or {file_key}) is not set")
+
+    return default
+
+
 class PostgreSQLBackup:
     """Handles PostgreSQL backup and Swift upload"""
 
     def __init__(self):
         """Initialize backup configuration from environment variables"""
-        # PostgreSQL settings
-        self.db_host = self.get_env('DB_HOST')
-        self.db_port = self.get_env('DB_PORT')
-        self.db_name = self.get_env('DB_NAME')
-        self.db_user = self.get_env('DB_USER')
-        self.db_password = self.get_env('DB_PASSWORD')
+        # PostgreSQL settings (required)
+        self.db_host = get_env_value('DB_HOST', required=True)
+        self.db_port = get_env_value('DB_PORT', required=True)
+        self.db_name = get_env_value('DB_NAME', required=True)
+        self.db_user = get_env_value('DB_USER', required=True)
+        self.db_password = get_env_value('DB_PASSWORD', required=True)
 
-        # Swift settings
-        self.swift_auth_url = self.get_env('SWIFT_AUTH_URL')
-        self.swift_username = self.get_env('SWIFT_USERNAME')
-        self.swift_password = self.get_env('SWIFT_PASSWORD')
-        self.swift_container = self.get_env('SWIFT_CONTAINER')
-        self.swift_region = self.get_env('SWIFT_REGION')
-        self.swift_tenant_name = self.get_env('SWIFT_TENANT_NAME')
+        # Swift settings (required)
+        self.swift_auth_url = get_env_value('SWIFT_AUTH_URL', required=True)
+        self.swift_username = get_env_value('SWIFT_USERNAME', required=True)
+        self.swift_password = get_env_value('SWIFT_PASSWORD', required=True)
+        self.swift_container = get_env_value('SWIFT_CONTAINER', required=True)
+        self.swift_region = get_env_value('SWIFT_REGION', required=True)
+        self.swift_tenant_name = get_env_value('SWIFT_TENANT_NAME', required=True)
 
-        # Backup settings
-        self.backup_dir = Path(os.getenv('DB_TMP_BACKUP_DIR', '/backups'))
-        self.swift_prefix = os.getenv('SWIFT_PREFIX', 'backups')
-        self.included_schemas = os.getenv('DB_DUMP_INCLUDED_SCHEMAS', 'public')
-        self.retention_days = int(os.getenv('SWIFT_RETENTION_DAYS', '30'))
+        # Backup settings (optional with defaults)
+        self.backup_dir = Path(get_env_value('DB_TMP_BACKUP_DIR', '/backups'))
+        self.swift_prefix = get_env_value('SWIFT_PREFIX', 'backups')
+        self.included_schemas = get_env_value('DB_DUMP_INCLUDED_SCHEMAS', 'public')
+        self.retention_days = int(get_env_value('SWIFT_RETENTION_DAYS', '30'))
 
-        # Supabase dump configuration (override via environment or use defaults)
-        self.internal_schemas = os.getenv('DB_DUMP_INTERNAL_SCHEMAS', DEFAULT_INTERNAL_SCHEMAS)
-        self.reserved_roles = os.getenv('DB_DUMP_RESERVED_ROLES', DEFAULT_RESERVED_ROLES)
-        self.allowed_configs = os.getenv('DB_DUMP_ALLOWED_CONFIGS', DEFAULT_ALLOWED_CONFIGS)
+        # Supabase dump configuration (optional, override via environment or use defaults)
+        self.internal_schemas = get_env_value('DB_DUMP_INTERNAL_SCHEMAS', DEFAULT_INTERNAL_SCHEMAS)
+        self.reserved_roles = get_env_value('DB_DUMP_RESERVED_ROLES', DEFAULT_RESERVED_ROLES)
+        self.allowed_configs = get_env_value('DB_DUMP_ALLOWED_CONFIGS', DEFAULT_ALLOWED_CONFIGS)
 
-        # Dump options
-        self.dump_roles = os.getenv('DB_DUMP_ROLES', 'true').lower() == 'true'
-        self.keep_comments = os.getenv('DB_DUMP_KEEP_COMMENTS', 'false').lower() == 'true'
-        self.use_copy = os.getenv('DB_DUMP_USE_COPY', 'false').lower() == 'true'
+        # Dump options (optional with defaults)
+        self.dump_roles = get_env_value('DB_DUMP_ROLES', 'true').lower() == 'true'
+        self.keep_comments = get_env_value('DB_DUMP_KEEP_COMMENTS', 'false').lower() == 'true'
+        self.use_copy = get_env_value('DB_DUMP_USE_COPY', 'false').lower() == 'true'
 
         # Shell script paths
         self.dump_schema_script = '/usr/local/bin/dump_schema.sh'
@@ -88,14 +129,6 @@ class PostgreSQLBackup:
 
         # Generate timestamp
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-
-    @staticmethod
-    def get_env(key):
-        """Get required environment variable or raise error"""
-        value = os.getenv(key)
-        if not value:
-            raise ValueError(f"Required environment variable {key} is not set")
-        return value
 
     def run_dump_script(self, script_path, additional_env=None):
         """Execute dump shell script with proper environment"""
