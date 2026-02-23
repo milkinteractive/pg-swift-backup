@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-02-23
+
+### Added
+- Table-level filtering with `DB_DUMP_INCLUDE_TABLES` and `DB_DUMP_EXCLUDE_TABLES` environment variables
+- Log message when `SWIFT_RETENTION_DAYS=0` skips cleanup
+
+### Fixed
+- Git ignore rules for `.DS_Store` and local Claude settings
+
 ## [1.1.2] - 2024-12-16
 
 ### Added
@@ -60,7 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable validation on startup
 - `RUN_ON_STARTUP` option for immediate backup on container start
 
-[Unreleased]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.0.1...v1.1.0
