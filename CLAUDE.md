@@ -253,6 +253,8 @@ Example: Instead of `DB_PASSWORD=secret`, use `DB_PASSWORD_FILE=/run/secrets/db_
 | `DB_DUMP_ROLES` | Export database roles | `true` |
 | `DB_DUMP_KEEP_COMMENTS` | Keep SQL comments | `false` |
 | `DB_DUMP_USE_COPY` | Use COPY syntax | `false` |
+| `DB_DUMP_INCLUDE_TABLES` | Only backup these tables (comma-separated, mutually exclusive with EXCLUDE) | _(none)_ |
+| `DB_DUMP_EXCLUDE_TABLES` | Exclude these tables (comma-separated, mutually exclusive with INCLUDE) | _(none)_ |
 
 ### Advanced Supabase Overrides
 

@@ -79,6 +79,13 @@ SWIFT_REGION=RegionOne
 - `DB_DUMP_KEEP_COMMENTS`: Keep SQL comments in dumps (default: `false`)
 - `DB_DUMP_USE_COPY`: Use COPY instead of INSERT syntax for data (default: `false`)
 
+### Table Filtering
+
+You can limit the backup to specific tables or exclude certain tables. These options are mutually exclusive — only set one at a time.
+
+- `DB_DUMP_INCLUDE_TABLES`: Comma-separated list of tables to backup (e.g., `public.users,public.orders`). Only these tables will be included in schema and data dumps.
+- `DB_DUMP_EXCLUDE_TABLES`: Comma-separated list of tables to exclude (e.g., `public.logs,public.sessions`). All tables except these will be backed up.
+
 ### Supabase Configuration (Advanced)
 
 These settings allow you to override the default Supabase schema/role patterns. If not set, the values are automatically extracted from the Supabase CLI at Docker build time.
@@ -347,6 +354,8 @@ When a `_FILE` variant is set, the value is read from the specified file path. T
 | `DB_DUMP_ROLES` | Export database roles | `true` |
 | `DB_DUMP_KEEP_COMMENTS` | Keep SQL comments | `false` |
 | `DB_DUMP_USE_COPY` | Use COPY syntax | `false` |
+| `DB_DUMP_INCLUDE_TABLES` | Only backup these tables (comma-separated) | _(none)_ |
+| `DB_DUMP_EXCLUDE_TABLES` | Exclude these tables (comma-separated) | _(none)_ |
 
 ### Advanced Supabase Overrides
 

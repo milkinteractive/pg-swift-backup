@@ -119,6 +119,12 @@ class PostgreSQLBackup:
         self.keep_comments = get_env_value('DB_DUMP_KEEP_COMMENTS', 'false').lower() == 'true'
         self.use_copy = get_env_value('DB_DUMP_USE_COPY', 'false').lower() == 'true'
 
+        # Table filtering (optional, mutually exclusive)
+        self.include_tables = get_env_value('DB_DUMP_INCLUDE_TABLES', '')
+        self.exclude_tables = get_env_value('DB_DUMP_EXCLUDE_TABLES', '')
+        if self.include_tables and self.exclude_tables:
+            raise ValueError("Cannot set both DB_DUMP_INCLUDE_TABLES and DB_DUMP_EXCLUDE_TABLES")
+
         # Shell script paths
         self.dump_schema_script = '/usr/local/bin/dump_schema.sh'
         self.dump_data_script = '/usr/local/bin/dump_data.sh'
@@ -129,6 +135,17 @@ class PostgreSQLBackup:
 
         # Generate timestamp
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+    def _build_table_flags(self):
+        """Build pg_dump table filter flags from environment configuration"""
+        flags = []
+        if self.include_tables:
+            for table in self.include_tables.split(','):
+                flags.append(f'--table={table.strip()}')
+        elif self.exclude_tables:
+            for table in self.exclude_tables.split(','):
+                flags.append(f'--exclude-table={table.strip()}')
+        return flags
 
     def run_dump_script(self, script_path, additional_env=None):
         """Execute dump shell script with proper environment"""
@@ -200,9 +217,13 @@ class PostgreSQLBackup:
             'INCLUDED_SCHEMAS': self.included_schemas,
         }
 
-        # Add extension flag if dumping all schemas
+        # Build extra flags
+        extra_flags = []
         if self.included_schemas == '*':
-            env['EXTRA_FLAGS'] = '--extension=*'
+            extra_flags.append('--extension=*')
+        extra_flags.extend(self._build_table_flags())
+        if extra_flags:
+            env['EXTRA_FLAGS'] = ' '.join(extra_flags)
 
         # Add comment removal if needed
         if not self.keep_comments:
@@ -237,6 +258,7 @@ class PostgreSQLBackup:
         if not self.use_copy:
             # Use INSERT statements instead of COPY
             extra_flags.extend(['--column-inserts', '--rows-per-insert 8000'])
+        extra_flags.extend(self._build_table_flags())
 
         if extra_flags:
             env['EXTRA_FLAGS'] = ' '.join(extra_flags)
@@ -376,6 +398,10 @@ class PostgreSQLBackup:
         try:
             logger.info("Starting PostgreSQL backup process")
             logger.info(f"Timestamp: {self.timestamp}")
+            if self.include_tables:
+                logger.info(f"Table filter (include only): {self.include_tables}")
+            elif self.exclude_tables:
+                logger.info(f"Table filter (exclude): {self.exclude_tables}")
 
             files_to_upload = []
 
