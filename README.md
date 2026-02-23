@@ -68,7 +68,7 @@ SWIFT_REGION=RegionOne
 - `SWIFT_PREFIX`: Path prefix within Swift container (default: `backups`). Leave empty for root of container.
   - Example: `SWIFT_PREFIX=backups` stores files at `container/backups/filename.sql.gz`
   - Example: `SWIFT_PREFIX=` stores files at `container/filename.sql.gz`
-- `SWIFT_RETENTION_DAYS`: How long to keep backups (default: 30 days)
+- `SWIFT_RETENTION_DAYS`: How long to keep backups (default: 30 days). Set to `0` to disable cleanup (keep all backups indefinitely).
 - `TZ`: Timezone for timestamps (default: `Europe/Zurich`)
 - `CRON_SCHEDULE`: When to run backups (default: `"0 2 * * *"` - daily at 2 AM)
 - `RUN_ON_STARTUP`: Run backup on container start (default: `"false"`)
@@ -340,7 +340,7 @@ When a `_FILE` variant is set, the value is read from the specified file path. T
 | `DB_DUMP_INCLUDED_SCHEMAS` | Schemas to backup | `public` |
 | `DB_TMP_BACKUP_DIR` | Local backup directory | `/backups` |
 | `SWIFT_PREFIX` | Swift path prefix | `backups` |
-| `SWIFT_RETENTION_DAYS` | Days to keep backups | `30` |
+| `SWIFT_RETENTION_DAYS` | Days to keep backups (`0` = keep all) | `30` |
 | `TZ` | Timezone | `Europe/Zurich` |
 | `CRON_SCHEDULE` | Cron schedule | `"0 2 * * *"` |
 | `RUN_ON_STARTUP` | Run on container start | `"false"` |

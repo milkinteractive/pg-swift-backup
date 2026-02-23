@@ -318,6 +318,7 @@ class PostgreSQLBackup:
     def cleanup_old_backups(self):
         """Remove old backups from Swift"""
         if self.retention_days <= 0:
+            logger.info("Retention days set to 0, skipping cleanup of old backups")
             return
 
         logger.info(f"Cleaning up backups older than {self.retention_days} days...")

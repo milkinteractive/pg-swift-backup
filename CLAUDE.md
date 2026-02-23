@@ -246,7 +246,7 @@ Example: Instead of `DB_PASSWORD=secret`, use `DB_PASSWORD_FILE=/run/secrets/db_
 | `DB_DUMP_INCLUDED_SCHEMAS` | Schemas to backup | `public` |
 | `DB_TMP_BACKUP_DIR` | Local backup directory | `/backups` |
 | `SWIFT_PREFIX` | Swift path prefix | `backups` |
-| `SWIFT_RETENTION_DAYS` | Days to keep backups | `30` |
+| `SWIFT_RETENTION_DAYS` | Days to keep backups (`0` = keep all) | `30` |
 | `TZ` | Timezone (for cron and timestamps) | `Europe/Zurich` |
 | `CRON_SCHEDULE` | Cron expression | `0 2 * * *` |
 | `RUN_ON_STARTUP` | Run on start | `false` |
