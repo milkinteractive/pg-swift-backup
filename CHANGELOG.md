@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- One-shot mode via `CRON_SCHEDULE=none`: run the backup once and exit, for external schedulers like Kubernetes Jobs/CronJobs
+  - Entrypoint execs backup.py directly so its exit code propagates to the container
+  - Logs go to stdout; no cron, logrotate or log tailing in this mode
+  - `RUN_ON_STARTUP` is ignored in one-shot mode
+
 ## [1.2.0] - 2026-02-23
 
 ### Added
