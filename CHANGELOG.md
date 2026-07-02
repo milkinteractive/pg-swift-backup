@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-02
+
 ### Added
 - One-shot mode via `CRON_SCHEDULE=none`: run the backup once and exit, for external schedulers like Kubernetes Jobs/CronJobs
   - Entrypoint execs backup.py directly so its exit code propagates to the container
@@ -75,7 +77,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable validation on startup
 - `RUN_ON_STARTUP` option for immediate backup on container start
 
-[Unreleased]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.0...v1.1.1
