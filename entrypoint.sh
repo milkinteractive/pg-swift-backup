@@ -89,12 +89,21 @@ fi
 echo "All required environment variables are set."
 echo ""
 
-# Create cron job from environment variable
-# Default: daily at 2 AM
 # Remove quotes from CRON_SCHEDULE and RUN_ON_STARTUP if present
-CRON_SCHEDULE="${CRON_SCHEDULE:-0 2 * * *}"
 CRON_SCHEDULE="${CRON_SCHEDULE//\"/}"  # Remove all quotes
 RUN_ON_STARTUP="${RUN_ON_STARTUP//\"/}"  # Remove all quotes
+
+# One-shot mode: run the backup once and exit (e.g. for Kubernetes Jobs/CronJobs
+# where scheduling is handled externally). No cron, no logrotate, no log tailing.
+# exec replaces this shell so the backup's exit code becomes the container's exit code.
+if [ "${CRON_SCHEDULE}" = "none" ]; then
+    echo "One-shot mode (CRON_SCHEDULE=none): running backup once, then exiting"
+    exec /usr/local/bin/python3 /usr/local/bin/backup.py
+fi
+
+# Create cron job from environment variable
+# Default: daily at 2 AM
+CRON_SCHEDULE="${CRON_SCHEDULE:-0 2 * * *}"
 
 echo "Setting up cron job with schedule: $CRON_SCHEDULE"
 

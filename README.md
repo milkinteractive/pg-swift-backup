@@ -70,8 +70,8 @@ SWIFT_REGION=RegionOne
   - Example: `SWIFT_PREFIX=` stores files at `container/filename.sql.gz`
 - `SWIFT_RETENTION_DAYS`: How long to keep backups (default: 30 days). Set to `0` to disable cleanup (keep all backups indefinitely).
 - `TZ`: Timezone for timestamps (default: `Europe/Zurich`)
-- `CRON_SCHEDULE`: When to run backups (default: `"0 2 * * *"` - daily at 2 AM)
-- `RUN_ON_STARTUP`: Run backup on container start (default: `"false"`)
+- `CRON_SCHEDULE`: When to run backups (default: `"0 2 * * *"` - daily at 2 AM). Set to `none` for one-shot mode (see below).
+- `RUN_ON_STARTUP`: Run backup on container start (default: `"false"`). Only relevant in cron mode; ignored when `CRON_SCHEDULE=none`.
 
 ### Backup Options
 
@@ -154,12 +154,44 @@ environment:
 "0 3 * * 1-5"    # Monday to Friday at 3 AM
 ```
 
+### One-Shot Mode (Kubernetes)
+
+Set `CRON_SCHEDULE=none` to run the backup exactly once and exit. No cron daemon is started, logs go directly to stdout, and the backup's exit code becomes the container's exit code. This is intended for environments where scheduling is handled externally, e.g. a Kubernetes `CronJob`:
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-backup
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: pg-backup
+              image: ghcr.io/milkinteractive/backup-pg-to-swift:latest
+              env:
+                - name: CRON_SCHEDULE
+                  value: "none"
+                # ... DB_* and SWIFT_* variables (or _FILE variants with mounted secrets)
+```
+
+Since the container exits with a non-zero code on failure, Kubernetes correctly reports failed backups (`backoffLimit`, alerting, etc.).
+
+**Note**: With Docker Compose, use `docker compose run --rm -e CRON_SCHEDULE=none pg-backup` for one-shot mode — not `docker compose up`, because `restart: unless-stopped` would restart the container after every run.
+
 ### Manual Backup
 
 For one-time backup without cron:
 
 ```bash
-# Manual backup
+# One-shot mode via entrypoint (includes _FILE resolution and env validation)
+docker compose run --rm -e CRON_SCHEDULE=none pg-backup
+
+# Or run the backup script directly
 docker compose run --rm pg-backup python3 /usr/local/bin/backup.py
 ```
 
@@ -349,8 +381,8 @@ When a `_FILE` variant is set, the value is read from the specified file path. T
 | `SWIFT_PREFIX` | Swift path prefix | `backups` |
 | `SWIFT_RETENTION_DAYS` | Days to keep backups (`0` = keep all) | `30` |
 | `TZ` | Timezone | `Europe/Zurich` |
-| `CRON_SCHEDULE` | Cron schedule | `"0 2 * * *"` |
-| `RUN_ON_STARTUP` | Run on container start | `"false"` |
+| `CRON_SCHEDULE` | Cron schedule (`none` = one-shot mode: run once, then exit) | `"0 2 * * *"` |
+| `RUN_ON_STARTUP` | Run on container start (cron mode only) | `"false"` |
 | `DB_DUMP_ROLES` | Export database roles | `true` |
 | `DB_DUMP_KEEP_COMMENTS` | Keep SQL comments | `false` |
 | `DB_DUMP_USE_COPY` | Use COPY syntax | `false` |

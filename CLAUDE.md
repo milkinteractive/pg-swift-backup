@@ -85,6 +85,8 @@ backup-pg-to-swift/
 
 **Why needed**: Cron doesn't inherit environment variables, so we need the wrapper script to export them.
 
+**One-Shot Mode** (v1.3.0): Setting `CRON_SCHEDULE=none` skips cron/logrotate setup entirely. After _FILE resolution and env validation, the entrypoint `exec`s backup.py directly: logs go to stdout, the backup's exit code becomes the container's exit code, and the container exits when done. Intended for Kubernetes Jobs/CronJobs where scheduling is external. `RUN_ON_STARTUP` is ignored in this mode.
+
 **Dynamic Export** (v1.1.0): The wrapper script uses `compgen -e | grep -E '^(DB_|SWIFT_)'` to automatically export all DB_* and SWIFT_* variables, eliminating the need to manually list each variable.
 
 ### 3. Dockerfile
@@ -177,12 +179,13 @@ python3 scripts/extract_supabase_definitions.py --local path/to/misc.go
 2. entrypoint.sh executes
 3. Resolves _FILE environment variables (Docker secrets)
 4. Validates required environment variables
-5. Creates cron job with CRON_SCHEDULE
-6. Creates run-backup.sh wrapper
-7. Sets up logrotate configuration
-8. Starts cron daemon
-9. (Optional) Runs backup if RUN_ON_STARTUP=true
-10. Tails /var/log/pg-backup.log (keeps container running)
+5. If CRON_SCHEDULE=none: exec backup.py once, then container exits (one-shot mode)
+6. Creates cron job with CRON_SCHEDULE
+7. Creates run-backup.sh wrapper
+8. Sets up logrotate configuration
+9. Starts cron daemon
+10. (Optional) Runs backup if RUN_ON_STARTUP=true
+11. Tails /var/log/pg-backup.log (keeps container running)
 ```
 
 ### Backup Execution
@@ -248,8 +251,8 @@ Example: Instead of `DB_PASSWORD=secret`, use `DB_PASSWORD_FILE=/run/secrets/db_
 | `SWIFT_PREFIX` | Swift path prefix | `backups` |
 | `SWIFT_RETENTION_DAYS` | Days to keep backups (`0` = keep all) | `30` |
 | `TZ` | Timezone (for cron and timestamps) | `Europe/Zurich` |
-| `CRON_SCHEDULE` | Cron expression | `0 2 * * *` |
-| `RUN_ON_STARTUP` | Run on start | `false` |
+| `CRON_SCHEDULE` | Cron expression (`none` = one-shot mode: run once, then exit) | `0 2 * * *` |
+| `RUN_ON_STARTUP` | Run on start (cron mode only, ignored in one-shot mode) | `false` |
 | `DB_DUMP_ROLES` | Export database roles | `true` |
 | `DB_DUMP_KEEP_COMMENTS` | Keep SQL comments | `false` |
 | `DB_DUMP_USE_COPY` | Use COPY syntax | `false` |
@@ -338,6 +341,7 @@ By default, `SWIFT_PREFIX` is `backups`, so files are stored under `backups/` in
 "0 0 * * 0"      # Every Sunday at midnight
 "*/30 * * * *"   # Every 30 minutes
 "0 3 * * 1-5"    # Weekdays at 3 AM
+"none"           # One-shot mode: run once, then exit (no cron)
 ```
 
 ## Deployment
@@ -483,6 +487,10 @@ Potential improvements:
   - Environment variable overrides for Supabase configuration
   - Replaced Python transformations with official shell scripts
   - Fixed missing `re` import bug
+- **v1.3.0**: One-shot mode for external schedulers
+  - `CRON_SCHEDULE=none` runs the backup once and exits
+  - Exit code of backup.py propagates to the container (Kubernetes Job/CronJob support)
+  - Logs to stdout, no cron/logrotate/log tailing in this mode
 
 ## References
 
