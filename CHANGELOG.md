@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-05
+
+### Changed
+- PostgreSQL client 18 from the PGDG apt repository (Debian 13 ships 17):
+  `pg_dumpall` refuses servers newer than itself, so dumping a PostgreSQL 18
+  server failed with "server version mismatch". pg_dump 18 still dumps
+  all older servers, so existing users (Supabase 15/17) are unaffected.
+
 ## [1.3.0] - 2026-07-02
 
 ### Added
