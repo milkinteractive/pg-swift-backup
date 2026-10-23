@@ -1,0 +1,39 @@
+# Dependabot version updates, weekly. Security updates run on their own as
+# soon as an alert appears. A manual run: GitHub > Insights > Dependency graph
+# > Dependabot > "Check for updates".
+version: 2
+updates:
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Zurich"
+    # Stay on Python 3.12 (security support until 2028-10); only digest
+    # refreshes of python:3.12-slim.
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    commit-message:
+      prefix: "build(docker)"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Zurich"
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Zurich"
+    commit-message:
+      prefix: "ci(deps)"
