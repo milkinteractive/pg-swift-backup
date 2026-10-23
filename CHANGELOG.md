@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-23
+
+### Security
+- Rebuilt on the current `python:3.12-slim` (Debian 13 security updates,
+  among them perl and libunbound with Critical CVEs); the base image is now
+  pinned by digest in both stages.
+- `certifi>=2026.10.19` (no longer trusts the compromised eMudhra/emSign
+  intermediate CA) and `urllib3>=2.8.0`.
+
+### Added
+- Dependabot version updates (`.github/dependabot.yml`) for the base image
+  digest, pip and GitHub Actions.
+
 ## [1.4.0] - 2026-08-05
 
 ### Changed
