@@ -72,6 +72,10 @@ RUN chmod +x /usr/local/bin/backup.py
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# License and the Supabase CLI notice ship with the image (MIT requires it
+# for the bundled dump scripts)
+COPY LICENSE THIRD_PARTY_NOTICES.md /usr/share/doc/backup-pg-to-swift/
+
 WORKDIR /backups
 
 # Run entrypoint script
