@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-05
+
+### Changed
+- Repository and image renamed to `pg-swift-backup`, now public: pull
+  `ghcr.io/milkinteractive/pg-swift-backup`. The license files ship under
+  `/usr/share/doc/pg-swift-backup/`.
+
 ## [1.4.2] - 2026-11-05
 
 ### Added
@@ -105,14 +112,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable validation on startup
 - `RUN_ON_STARTUP` option for immediate backup on container start
 
-[Unreleased]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.4.2...HEAD
-[1.4.2]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.4.1...v1.4.2
-[1.4.1]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.4.0...v1.4.1
-[1.4.0]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.3.0...v1.4.0
-[1.3.0]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.2.0...v1.3.0
-[1.2.0]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.2...v1.2.0
-[1.1.2]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.1...v1.1.2
-[1.1.1]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.1.0...v1.1.1
-[1.1.0]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.0.1...v1.1.0
-[1.0.1]: https://github.com/milkinteractive/backup-pg-to-swift/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/milkinteractive/backup-pg-to-swift/releases/tag/v1.0.0
+[Unreleased]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.4.2...v1.5.0
+[1.4.2]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.4.1...v1.4.2
+[1.4.1]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.1.2...v1.2.0
+[1.1.2]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.0.1...v1.1.0
+[1.0.1]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/milkinteractive/pg-swift-backup/releases/tag/v1.0.0
