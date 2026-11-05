@@ -104,11 +104,11 @@ The easiest way to use this backup system is with the pre-built Docker image:
 
 ```bash
 # Pull the latest image
-docker pull ghcr.io/milkinteractive/backup-pg-to-swift:latest
+docker pull ghcr.io/milkinteractive/pg-swift-backup:latest
 
 # Update docker-compose.yml to use the pre-built image
 # Replace 'build: .' with:
-# image: ghcr.io/milkinteractive/backup-pg-to-swift:latest
+# image: ghcr.io/milkinteractive/pg-swift-backup:latest
 
 # Start the container
 docker compose up -d
@@ -172,7 +172,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: pg-backup
-              image: ghcr.io/milkinteractive/backup-pg-to-swift:latest
+              image: ghcr.io/milkinteractive/pg-swift-backup:latest
               env:
                 - name: CRON_SCHEDULE
                   value: "none"
@@ -309,7 +309,7 @@ All environment variables support the `_FILE` suffix pattern for Docker Secrets 
 # docker-compose.yml with Docker Secrets
 services:
   pg-backup:
-    image: ghcr.io/milkinteractive/backup-pg-to-swift:latest
+    image: ghcr.io/milkinteractive/pg-swift-backup:latest
     environment:
       DB_HOST: db.example.com
       DB_PORT: 5432
@@ -420,7 +420,7 @@ Local template files are included as fallback if GitHub is unreachable during bu
 To manually update the templates to the latest Supabase CLI version:
 
 ```bash
-cd backup-pg-to-swift
+cd pg-swift-backup
 python3 scripts/extract_supabase_definitions.py --output supabase_defaults.py
 docker compose build --no-cache
 ```

@@ -74,7 +74,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # License and the Supabase CLI notice ship with the image (MIT requires it
 # for the bundled dump scripts)
-COPY LICENSE THIRD_PARTY_NOTICES.md /usr/share/doc/backup-pg-to-swift/
+COPY LICENSE THIRD_PARTY_NOTICES.md /usr/share/doc/pg-swift-backup/
 
 WORKDIR /backups
 

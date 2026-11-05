@@ -25,7 +25,7 @@ This project provides an automated PostgreSQL backup solution that uploads backu
 ## Project Structure
 
 ```
-backup-pg-to-swift/
+pg-swift-backup/
 ├── backup.py                        # Main Python backup script
 ├── entrypoint.sh                    # Container entrypoint with cron setup
 ├── Dockerfile                       # Multi-stage Docker build
@@ -127,7 +127,7 @@ backup-pg-to-swift/
   - Python packages: python-swiftclient, python-keystoneclient
 - Copies dump scripts and defaults from builder stage
 - Copies backup.py and entrypoint.sh
-- Copies `LICENSE` and `THIRD_PARTY_NOTICES.md` to `/usr/share/doc/backup-pg-to-swift/` (MIT requires the Supabase notice with the bundled scripts)
+- Copies `LICENSE` and `THIRD_PARTY_NOTICES.md` to `/usr/share/doc/pg-swift-backup/` (MIT requires the Supabase notice with the bundled scripts)
 - Sets default environment variables
 
 **Build Benefits**:
@@ -183,7 +183,7 @@ python3 scripts/extract_supabase_definitions.py --local path/to/misc.go
 **Purpose**: Uses pre-built image from GitHub Container Registry
 
 **Key Features**:
-- Uses `ghcr.io/milkinteractive/backup-pg-to-swift:latest`
+- Uses `ghcr.io/milkinteractive/pg-swift-backup:latest`
 - Identical configuration to docker-compose.yml
 - Faster deployment (no build required)
 

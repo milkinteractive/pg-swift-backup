@@ -1,6 +1,6 @@
 services:
   pg-backup:
-    image: ghcr.io/milkinteractive/backup-pg-to-swift:latest
+    image: ghcr.io/milkinteractive/pg-swift-backup:latest
     container_name: pg-backup-to-swift
     env_file:
       - .env
