@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/.env*)",
+      "Read(**/*.env)",
+      "Read(!**/*.example)",
+      "Read(!**/*.sample)",
+      "Bash(security find-generic-password *)",
+      "Bash(/usr/bin/security find-generic-password *)"
+    ]
+  }
+}

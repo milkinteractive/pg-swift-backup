@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Rejects a commit that would add a secret in plain text. It checks what is
+# staged, not the working tree:
+# - no .env file anywhere, except templates (*.example, *.sample);
+# - no key files (*.pem, *.key, *.p12, private SSH keys, keystores);
+# - betterleaks finds no token or key inside any staged change (reviewed
+#   false positives: .betterleaksignore).
+# Enable once per clone (betterleaks comes with the Brewfile):
+#   git config core.hooksPath .githooks
+set -euo pipefail
+
+command -v betterleaks >/dev/null ||
+  { echo "pre-commit: betterleaks is missing (brew bundle)" >&2; exit 1; }
+
+fail=0
+reject() { echo "pre-commit: $1: $2" >&2; fail=1; }
+
+# NUL-separated and unquoted, so any file name arrives verbatim; matched in
+# lower case because macOS ignores case (.ENV is .env).
+while IFS= read -r -d '' f; do
+  lc=$(printf '%s' "$f" | tr '[:upper:]' '[:lower:]')
+  case "$lc" in
+    *.example|*.sample) ;;
+    .env|.env.*|.env-*|*/.env|*/.env.*|*/.env-*|*.env)
+      reject "$f" "plaintext env file; pass secrets via _FILE or a secret store" ;;
+    *.pub) ;;
+    *.pem|*.key|*.p12|*.pfx|*.p8|*.jks|*.keystore|*.pepk|*.ppk)
+      reject "$f" "key file" ;;
+    id_rsa*|*/id_rsa*|id_ecdsa*|*/id_ecdsa*|id_ed25519*|*/id_ed25519*)
+      reject "$f" "private SSH key" ;;
+  esac
+done < <(git -c core.quotePath=false diff --cached --name-only -z --diff-filter=ACMRT)
+
+# Tokens and keys inside any staged change; values are redacted, nothing is
+# sent anywhere (live validation stays off).
+betterleaks git --pre-commit --staged --redact --no-banner --verbose --log-level warn ||
+  { echo "pre-commit: betterleaks found a secret (see above)" >&2; fail=1; }
+
+exit "$fail"

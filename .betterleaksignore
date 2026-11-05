@@ -1,0 +1,6 @@
+# Reviewed false positives in the history (betterleaks fingerprints:
+# commit:file:rule:line). All three are placeholder passwords in the initial
+# commit's .env.example and README.md.
+caf2601e0a6ed5709961b3798ec3697e37fd6df3:.env.example:generic-password:6
+caf2601e0a6ed5709961b3798ec3697e37fd6df3:.env.example:generic-password:11
+caf2601e0a6ed5709961b3798ec3697e37fd6df3:README.md:generic-password:55
