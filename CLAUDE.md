@@ -18,6 +18,10 @@ This project provides an automated PostgreSQL backup solution that uploads backu
 
 **Testing**: When testing the backup system, ALWAYS set `RUN_ON_STARTUP=true` in your .env file to verify the backup process runs correctly on container startup. This ensures the backup script executes immediately, allowing you to validate the configuration and troubleshoot any issues.
 
+**Public Repository**: The repo and the GHCR image are public. Examples and templates use placeholders only (`your-database-host`, `SBI-XXXXXXX`); never commit real hosts, ports, account IDs or container names.
+
+**Secret Scanning**: Enable the pre-commit hook once per clone with `git config core.hooksPath .githooks` (needs betterleaks, `brew bundle`). It rejects plaintext `.env` files, key files and tokens. `betterleaks.yml` scans the whole history on every push and PR; reviewed false positives go by fingerprint into `.betterleaksignore`.
+
 ## Project Structure
 
 ```
@@ -35,9 +39,21 @@ backup-pg-to-swift/
 │   ├── dump_schema.sh
 │   ├── dump_data.sh
 │   └── dump_role.sh
+├── .github/
+│   ├── dependabot.yml               # Weekly docker/pip/actions updates
+│   └── workflows/
+│       ├── docker-publish.yml       # Image build + GitHub release on v* tags
+│       └── betterleaks.yml          # Secret scan of the whole history on push/PR
+├── .githooks/
+│   └── pre-commit                   # Rejects plaintext .env, key files, tokens
+├── .betterleaksignore               # Reviewed betterleaks false positives
+├── .claude/settings.json            # Denies Claude reads of .env files
+├── Brewfile                         # Dev tools (betterleaks)
 ├── .env                             # Environment variables (not in git)
 ├── .env.example                     # Environment template
 ├── .gitignore                       # Git ignore rules
+├── LICENSE                          # MIT
+├── THIRD_PARTY_NOTICES.md           # Supabase CLI MIT notice (also in the image)
 ├── README.md                        # User documentation
 └── CLAUDE.md                        # This file - technical documentation
 ```
@@ -111,6 +127,7 @@ backup-pg-to-swift/
   - Python packages: python-swiftclient, python-keystoneclient
 - Copies dump scripts and defaults from builder stage
 - Copies backup.py and entrypoint.sh
+- Copies `LICENSE` and `THIRD_PARTY_NOTICES.md` to `/usr/share/doc/backup-pg-to-swift/` (MIT requires the Supabase notice with the bundled scripts)
 - Sets default environment variables
 
 **Build Benefits**:
@@ -512,4 +529,8 @@ For issues or questions:
 
 ## License
 
-This project is for internal use.
+MIT, see `LICENSE`. The dump scripts in `templates/` and the values in `supabase_defaults.py` come from the Supabase CLI (MIT), see `THIRD_PARTY_NOTICES.md`.
+
+## Applied Learning
+
+- Re-pushing `v*` tags rebuilds old images and `latest`; disable docker-publish first

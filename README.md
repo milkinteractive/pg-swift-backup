@@ -427,6 +427,23 @@ docker compose build --no-cache
 
 This ensures your backup solution always uses the latest Supabase-compatible dump logic.
 
+## Contributing
+
+Enable the pre-commit hook once per clone. It rejects plaintext `.env` files,
+key files and tokens before they are committed and needs
+[betterleaks](https://github.com/betterleaks/betterleaks) (`brew bundle`):
+
+```bash
+git config core.hooksPath .githooks
+```
+
+A betterleaks job in GitHub Actions scans the whole history on every push and
+pull request.
+
 ## License
 
-This script is for internal use.
+[MIT](LICENSE) © Milk Interactive AG
+
+The dump scripts and Supabase defaults come from the
+[Supabase CLI](https://github.com/supabase/cli) (MIT), see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
