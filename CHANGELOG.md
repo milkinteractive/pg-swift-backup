@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-06
+
+### Changed
+- `python-swiftclient` 4.11.0 and `python-keystoneclient` 6.0.0 (Keystone v3
+  auth and uploads tested against Infomaniak Swift with `1.5.1-rc.1`).
+
+### Security
+- `certifi>=2026.10.23`.
+
+### Fixed
+- `latest`, `X` and `X.Y` image tags follow stable release tags only; a
+  pre-release tag (`vX.Y.Z-rc.N`) publishes just its own image tag. The
+  release notes pull the image tag without the `v` prefix.
+
 ## [1.5.0] - 2026-11-05
 
 ### Changed
@@ -112,7 +126,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable validation on startup
 - `RUN_ON_STARTUP` option for immediate backup on container start
 
-[Unreleased]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.4.0...v1.4.1

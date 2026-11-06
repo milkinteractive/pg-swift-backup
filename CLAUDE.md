@@ -481,8 +481,8 @@ Potential improvements:
 
 ### Python Packages
 
-- `python-swiftclient==4.6.0`: Swift API client
-- `python-keystoneclient==5.4.0`: OpenStack authentication
+- `python-swiftclient==4.11.0`: Swift API client
+- `python-keystoneclient==6.0.0`: OpenStack authentication
 
 ### System Packages
 
