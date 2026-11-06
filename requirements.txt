@@ -1,6 +1,6 @@
-python-swiftclient==4.6.0
-python-keystoneclient==5.4.0
+python-swiftclient==4.11.0
+python-keystoneclient==6.0.0
 # Transitive (via requests); floors for fixed security issues: certifi drops
 # the compromised eMudhra/emSign CA, urllib3 2.8.0 fixes CVE-2026-97687/97689.
-certifi>=2026.10.19
+certifi>=2026.10.23
 urllib3>=2.8.0
