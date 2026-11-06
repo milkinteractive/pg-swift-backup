@@ -36,11 +36,15 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # latest follows stable release tags only; a pre-release tag
+          # (vX.Y.Z-rc.N) publishes just its own image tag for testing.
+          flavor: |
+            latest=auto
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
@@ -58,12 +62,13 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
           body: |
             ## Docker Image
 
             Pull the image:
             ```bash
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
             ```
 
             See [README.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/README.md) for usage instructions.
