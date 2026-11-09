@@ -2,7 +2,7 @@
 # Debian security fixes instead of a cached layer, and Dependabot (docker
 # ecosystem) proposes the digest refreshes.
 # Stage 1: Download Supabase CLI dump scripts and generate defaults
-FROM python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS builder
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b AS builder
 
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
@@ -32,7 +32,7 @@ RUN python3 extract_supabase_definitions.py --output /tmp/supabase_defaults.py |
     echo "Warning: Could not download latest definitions, using bundled defaults" >&2
 
 # Stage 2: Production image
-FROM python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
 
 # Install system dependencies. postgresql-client comes from the PGDG repo:
 # pg_dump/pg_dumpall must be >= the server's major version, and Debian's
