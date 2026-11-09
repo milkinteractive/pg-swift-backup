@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-11-09
+
+### Security
+- Rebuilt on the `python:3.12-slim` of 2026-11-05: Python 3.12.16 and the
+  Debian 13 security updates since 2026-10-21 (tested with `1.5.2-rc.1` on a
+  plain PostgreSQL and a Supabase database; identical dump sizes).
+
 ## [1.5.1] - 2026-11-06
 
 ### Changed
@@ -126,7 +133,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable validation on startup
 - `RUN_ON_STARTUP` option for immediate backup on container start
 
-[Unreleased]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/milkinteractive/pg-swift-backup/compare/v1.4.1...v1.4.2
