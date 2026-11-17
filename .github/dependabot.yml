@@ -1,5 +1,6 @@
 # Dependabot version updates, weekly. Security updates run on their own as
-# soon as an alert appears. A manual run: GitHub > Insights > Dependency graph
+# soon as an alert appears and ignore the cooldown. Version updates wait 7
+# days after a release: a hijacked release is usually pulled within days. A manual run: GitHub > Insights > Dependency graph
 # > Dependabot > "Check for updates".
 version: 2
 updates:
@@ -10,6 +11,8 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Zurich"
+    cooldown:
+      default-days: 7
     # Stay on Python 3.12 (security support until 2028-10); only digest
     # refreshes of python:3.12-slim.
     ignore:
@@ -25,6 +28,8 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Zurich"
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "build(deps)"
 
@@ -35,5 +40,7 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Zurich"
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "ci(deps)"
