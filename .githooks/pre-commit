@@ -32,8 +32,26 @@ while IFS= read -r -d '' f; do
 done < <(git -c core.quotePath=false diff --cached --name-only -z --diff-filter=ACMRT)
 
 # Tokens and keys inside any staged change; values are redacted, nothing is
-# sent anywhere (live validation stays off).
-betterleaks git --pre-commit --staged --redact --no-banner --verbose --log-level warn ||
-  { echo "pre-commit: betterleaks found a secret (see above)" >&2; fail=1; }
+# sent anywhere (live validation stays off). betterleaks 1 and 2 take
+# different commands for staged changes. Version 2 gets only the entries of
+# .betterleaksignore it can read (hashes of values); entries in the older
+# form would print a warning each on every commit.
+scan=0
+case "$(betterleaks version 2>/dev/null | sed -n -E 's/^[^0-9]*([0-9]+)\..*/\1/p' | head -1)" in
+  1)
+    betterleaks git --pre-commit --staged --redact --no-banner --verbose --log-level warn || scan=$? ;;
+  2)
+    ignore="$(git rev-parse --git-dir)/betterleaksignore"
+    grep -E '^([0-9a-fA-F]{64}|hmac-sha256:[0-9a-fA-F]+)$' .betterleaksignore > "$ignore" 2>/dev/null || true
+    git diff --cached --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ |
+      betterleaks stdin --git-diff --redact --no-banner --log-level warn --ignore-file "$ignore" || scan=$? ;;
+  *)
+    scan=2 ;;
+esac
+case "$scan" in
+  0) ;;
+  1) echo "pre-commit: betterleaks found a secret (see above)" >&2; fail=1 ;;
+  *) echo "pre-commit: betterleaks could not scan (exit $scan); this hook knows betterleaks 1 and 2" >&2; fail=1 ;;
+esac
 
 exit "$fail"
